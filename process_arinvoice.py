@@ -190,7 +190,6 @@ def printpricechangelist( date ):
 emptyline = ',,,,,,,,,,,,,'
 with open(file) as f:
 	append=False
-	lag=False
 	for line in f:
 		#trim all whitespace to start`
 		line = line.strip()
@@ -203,15 +202,6 @@ with open(file) as f:
 #			orderdate = datetime.datetime.strptime(orderdatefromldb,'%Y-%m-%d %H:%M:%S.%f')
 			orderdate = datetime.datetime.strptime(orderdatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
 			print(orderdate)
-		if( lag ):
-			append=True
-			lag=False
-		if( line.find( 'SKU,Product Description') > -1):
-#			append=True
-			emptyline = re.sub('[^,]','',line)
-			print(emptyline)
-			print(line.strip())
-			lag=True
 		if( line.strip() == emptyline.strip() and append ):
 			append=False
 		if( append ):
@@ -226,6 +216,11 @@ with open(file) as f:
 			line = re.sub( '(,,|, ,)', ',0.00,', line )
 
 			addlineitem(line, orderdate)
+		if( line.find( 'SKU,Product Description') > -1):
+			append=True
+			emptyline = re.sub('[^,]','',line)
+			print(emptyline)
+			print(line.strip())
 
 printinvoicetofile( orderdate )
 printpricechangelist( orderdate )
