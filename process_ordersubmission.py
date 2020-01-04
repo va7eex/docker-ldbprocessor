@@ -10,6 +10,12 @@ import datetime
 from datetime import date
 from mysql.connector import (connection)
 
+from constants import MYSQL_USER
+from constants import MYSQL_PASS
+from constants import MYSQL_IP
+from constants import MYSQL_PORT
+from constants import MYSQL_DATABASE
+
 DIRECTORY='/var/ldbinvoice'
 PB_FILE='processedbarcodes.json'
 
