@@ -1,0 +1,56 @@
+version: "3"
+services:
+
+  #database
+
+  LDBdatabase_dev:
+    image: linuxserver/mariadb:latest
+    container_name: LDBdatabase
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=replacerootpwd
+      - TZ=America/Vancouver
+      - MYSQL_DATABASE=replacedb
+      - MYSQL_USER=replaceuser
+      - MYSQL_PASSWORD=replacepwd
+    ports:
+      - 3307:3306
+    restart: always
+
+  #apps, will build to order
+
+  ldb_processor_bc:
+    container_name: LDBprocessor_bc
+    build:
+      context: ./
+      dockerfile: dockerfile-bc
+    user: "1002:1002"
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    depends_on:
+      - database
+  ldb_processor_os:
+    container_name: LDBprocessor_os
+    build:
+      context: ./
+      dockerfile: dockerfile-os
+    user: "1002:1002"
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    depends_on:
+      - database
+  ldb_processor_ar:
+    container_name: LDBprocessor_ar
+    build:
+      context: ./
+      dockerfile: dockerfile-ar
+    user: "1002:1002"
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    depends_on:
+      - database
+

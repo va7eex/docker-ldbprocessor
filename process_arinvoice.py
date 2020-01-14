@@ -61,7 +61,7 @@ cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
 	uom VARCHAR(20),
 	priceperuom FLOAT(7,4),
 	extendedprice FLOAT(7,4),
-	suquantity FLOAT(7,4),
+	suquantity SMALLINT UNSIGNED,
 	suprice FLOAT(7,4),
 	wppsavings FLOAT(7,4),
 	contdeposit FLOAT(7,4),
@@ -163,7 +163,7 @@ def addlineitem( line, orderdate ):
 
 def printinvoicetofile( date ):
 	cursor = cnx.cursor(buffered=True)
-	cursor.execute(("SELECT DISTINCT sku, suprice, suquantity, productdescription FROM invoicelog WHERE invoicedate='%s'")%(date))
+	cursor.execute(("SELECT DISTINCT sku, suprice, suquantity, productdescription, originalorder FROM invoicelog WHERE invoicedate='%s'")%(date))
 
 	rows = cursor.fetchall()
 
@@ -187,6 +187,8 @@ def printpricechangelist( date ):
 
 	cursor.close()
 
+dollaramount = re.compile('\$\d+,\d{3}')
+
 emptyline = ',,,,,,,,,,,,,'
 with open(file) as f:
 	append=False
@@ -205,9 +207,8 @@ with open(file) as f:
 		if( line.strip() == emptyline.strip() and append ):
 			append=False
 		if( append ):
-			p = re.compile('\$\d+,\d{3}')
-			m = p.match(line)
-			if( m is not None ):
+			imparsabledollaramount = dollaramount.search(line)
+			if( imparsabledollaramount is not None ):
 				print( m.group() )
 				line.replace(m.group(), m.group().replace(',',''))
 
