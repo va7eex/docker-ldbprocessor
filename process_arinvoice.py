@@ -169,7 +169,7 @@ def printinvoicetofile( date ):
 
 	with open(outfile, 'a') as fp:
 		for row in rows:
-			sku, unitprice, qty, productdescr = row
+			sku, unitprice, qty, productdescr, originalorder = row
 			fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
 
 	cursor.close()
