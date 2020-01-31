@@ -39,6 +39,7 @@ services:
     user: "1002:1002"
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+      - /home/bibwsstaff/googledrive/OrderSubmission:/var/ordersubmission
     restart: always
     depends_on:
       - database
