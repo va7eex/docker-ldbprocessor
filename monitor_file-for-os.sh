@@ -10,6 +10,6 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
 		in2csv $path$file > /tmp/"${file%.*}.csv"
 		echo 'processing OSRPDF'
 		cp /tmp/"${file%.*}.csv" /var/ldbinvoice/"${file%.*}.csv"
-		python3 /usr/share/process_ordersubmission.py /tmp/"${file%.*}.csv" #>> $path$(date +%Y%m%d)"_log_ordersubmission.txt"
+		python3 /usr/share/process_ordersubmission.py /tmp/"${file%.*}.csv" #>> $path$(date +%Y-%h-%d)"_log_ordersubmission.txt"
 	fi
     done

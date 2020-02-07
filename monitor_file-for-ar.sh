@@ -9,6 +9,6 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
 		echo 'found '$path$file
 		in2csv $path$file > /tmp/"${file%.*}.csv"
 		echo 'processing ARINVOICE'
-		python3 /usr/share/process_arinvoice.py /tmp/"${file%.*}.csv" $path$(date +%Y%m%d)"_for-PO-import-test.txt" $path$(date +%Y%m%d)"_pricedeltareport-test.txt"
+		python3 /usr/share/process_arinvoice.py /tmp/"${file%.*}.csv" $path$(date +%Y-%h-%d)"_for-PO-import.txt" $path$(date +%Y-%h-%d)"_pricedeltareport.txt"
 	fi
     done

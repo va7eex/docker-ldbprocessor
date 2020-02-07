@@ -45,7 +45,7 @@ with open(file) as f:
 scannedlist = {}
 scannedlist[latestscan] = {}
 scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
-scannedlist[latestscan]['tally'] = sumRedisValues(r.hvals(latestscan))
+scannedlist[latestscan]['_tally'] = sumRedisValues(r.hvals(latestscan))
 #scannedlist[latestscan]['barcodes'] = stringifyFields(latestscan)
 #scannedlist[latestscan]['tally'] = sum( convertArrayToInts(r.hvals(latestscan)))
 

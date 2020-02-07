@@ -8,6 +8,7 @@ import re
 import time
 import datetime
 from datetime import date
+#import pymysql
 from mysql.connector import (connection)
 
 from constants import MYSQL_USER

@@ -12,6 +12,7 @@ import time
 import datetime
 import re
 from datetime import date
+#import mysqlclient
 from mysql.connector import (connection)
 
 from constants import MYSQL_USER
