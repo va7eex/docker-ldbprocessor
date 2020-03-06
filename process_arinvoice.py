@@ -20,6 +20,9 @@ from constants import MYSQL_PASS
 from constants import MYSQL_IP
 from constants import MYSQL_PORT
 from constants import MYSQL_DATABASE
+from constants import REDIS_IP
+from constants import REDIS_PORT
+
 
 DIRECTORY='/var/ldbinvoice'
 PB_FILE='processedbarcodes.json'

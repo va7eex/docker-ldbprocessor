@@ -1,10 +1,18 @@
-echo "What is my IP? (IPv4 only)"
+echo "What is my mysql IP? (IP or name of container)"
 
 read myip
 
-echo "What is my port?"
+echo "What is my mysql port?"
 
 read myport
+
+echo "What is my redis IP? (IP or name of container)"
+
+read myredis
+
+echo "What is my redis port? (default 6379)"
+
+read myredisport
 
 echo "What is the name of the database? (one word)"
 

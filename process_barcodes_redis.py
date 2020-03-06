@@ -16,6 +16,8 @@ from constants import MYSQL_PASS
 from constants import MYSQL_IP
 from constants import MYSQL_PORT
 from constants import MYSQL_DATABASE
+from constants import REDIS_IP
+from constants import REDIS_PORT
 
 scannedlist = {}
 
@@ -23,7 +25,7 @@ key_scan = 'scanned'
 key_tally = '_tally'
 key_checksum = 'checksum'
 
-r = redis.StrictRedis('redis',charset='utf-8',decode_responses=True)
+r = redis.StrictRedis(REDIS_IP, REDIS_PORT, charset='utf-8',decode_responses=True)
 
 def sumRedisValues( list ):
 
