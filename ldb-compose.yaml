@@ -20,9 +20,10 @@ services:
     networks:
       - ldbbackend
 
-  redis:
+  ldbredis:
     image: redis:alpine
-    container_name: redis
+    container_name: ldbredis
+    restart: always
     networks:
       - ldbbackend
 
@@ -40,6 +41,7 @@ services:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
+      - ldbredis
       - database
     networks:
       - ldbbackend
@@ -56,6 +58,7 @@ services:
       - /home/bibwsstaff/googledrive/OrderSubmission:/var/ordersubmission
     restart: always
     depends_on:
+      - ldbredis
       - database
     networks:
       - ldbbackend
@@ -71,6 +74,7 @@ services:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
+      - ldbredis
       - database
     networks:
       - ldbbackend
