@@ -1,22 +1,37 @@
-echo "What is my mysql IP? (IP or name of container)"
+echo "What is my mysql IP? (IP or name of container) [LDBdatabase]"
 
 read myip
 
-echo "What is my mysql port?"
+if [[ -z "$myip" ]]; then
+    myip = "LDBdatabase"
+
+echo "What is my mysql port? [3306]"
 
 read myport
 
-echo "What is my redis IP? (IP or name of container)"
+if [[ -z "$myport" ]]; then
+    myport = "3306"
+
+echo "What is my redis IP? (IP or name of container) [LDBredis]"
 
 read myredis
 
-echo "What is my redis port? (default 6379)"
+if [[ -z "$myredis" ]]; then
+    myredis = "LDBredis"
+
+echo "What is my redis port? [6379]"
 
 read myredisport
 
-echo "What is the name of the database? (one word)"
+if [[ -z "$myredisport" ]]; then
+    myredisport = "6379"
+
+echo "What is the name of the database? (one word) [LDB]"
 
 read mydb
+
+if [[ -z "$mydb" ]]; then
+    mydb = "LDB"
 
 echo "Who will be the user? (one word)"
 
