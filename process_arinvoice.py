@@ -113,21 +113,21 @@ def addlineitem( line, orderdate ):
 
 	linesplit = line.split(',')
 
-	sku = linesplit[0].strip()
-	proddesc = linesplit[1].strip()
-	prodcat = linesplit[2].strip()
-	size = linesplit[3].strip()
-	qty = linesplit[4].strip()
-	uom = linesplit[5].strip()
-	priceperuom = linesplit[6].strip()
-	extprice = linesplit[7].strip()
-	suq = linesplit[8].strip()
-	suprice = linesplit[9].strip()
-	wpps = linesplit[10].strip()
-	contd = linesplit[11].strip()
-	ref = linesplit[12].strip()
+	sku = linesplit[0].strip()		#int
+	proddesc = linesplit[1].strip()		#str
+	prodcat = linesplit[2].strip()		#str
+	size = linesplit[3].strip()		#str
+	qty = linesplit[4].strip()		#int
+	uom = linesplit[5].strip()		#str
+	priceperuom = linesplit[6].strip()	#float
+	extprice = linesplit[7].strip()		#float
+	suq = linesplit[8].strip()		#int unsigned
+	suprice = linesplit[9].strip()		#float
+	wpps = linesplit[10].strip()		#float
+	contd = linesplit[11].strip()		#float
+	ref = linesplit[12].strip()		#int
 
-	query = ('''INSERT INTO invoicelog (
+	query = f'''INSERT INTO invoicelog (
 		sku,
 		productdescription,
 		productcategory,
@@ -142,24 +142,23 @@ def addlineitem( line, orderdate ):
 		contdeposit,
 		originalorder,
 		invoicedate
-		) VALUES (%s, '%s', '%s', '%s', %s, '%s', %s, %s, %s, %s, %s, %s, %s, '%s')''')%(
-		sku,
-		proddesc,
-		prodcat,
-		size,
-		qty,
-		uom,
-		priceperuom,
-		extprice,
-		suq,
-		suprice,
-		wpps,
-		contd,
-		ref,
-		orderdate
-		)
-#	print(query)
-	cursor.execute(query)
+		) VALUES ({sku},'{proddesc}','{prodcat}','{size}',{qty},'{uom}',{priceperuom},{extprice},{suq},{suprice},{wpps},{contd},{ref},'{orderdate}')'''
+
+	try:
+		cursor.execute(query)
+	except Exception as err:
+		print('')
+		print('!!! ERROR !!!')
+		print(err)
+		print('')
+		print(line)
+		print('')
+		print(query)
+		with open(DIRECTORY + '/database-errors.txt', 'a') as fp:
+			fp.write('Error at line:\n%s'%line)
+			fp.write(f'\n{err}')
+			if(len(linesplit) > 13):
+				fp.write('\n\t Cause: Errant comma somewhere in line')
 	cnx.commit()
 	cursor.close()
 
