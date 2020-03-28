@@ -37,6 +37,8 @@ services:
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
+    environment:
+      - REDIS_IP=ldbredis
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
@@ -53,6 +55,8 @@ services:
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
+    environment:
+      - REDIS_IP=ldbredis
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
       - /home/bibwsstaff/googledrive/OrderSubmission:/var/ordersubmission
@@ -70,6 +74,8 @@ services:
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
+    environment:
+      - REDIS_IP=ldbredis
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always

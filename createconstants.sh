@@ -17,7 +17,7 @@ echo "What is my redis IP? (IP or name of container) [LDBredis]"
 read myredis
 
 if [[ -z "$myredis" ]]; then
-    myredis = "LDBredis"
+    myredis = "ldbredis"
 
 echo "What is my redis port? [6379]"
 
@@ -50,6 +50,9 @@ echo "MYSQL_PORT='${myport}'" >> ./constants.py
 echo "MYSQL_DATABASE='${mydb}'" >> ./constants.py
 echo "MYSQL_USER='${myname}'" >> ./constants.py
 echo "MYSQL_PASS='${mypass}'" >> ./constants.py
+
+echo "REDIS_IP='${myredis}" >> ./constants.py
+echo "REDIS_PORT=${myredisport}" >> ./constants.py
 
 sed -i "s#replacerootpwd#${rootpw}#g" ./ldb-compose.yaml
 sed -i "s#replacedb#${mydb}#g" ./ldb-compose.yaml
