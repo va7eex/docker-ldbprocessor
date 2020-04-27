@@ -28,36 +28,74 @@ key_checksum = 'checksum'
 r = redis.StrictRedis(REDIS_IP, REDIS_PORT, charset='utf-8',decode_responses=True)
 
 def sumRedisValues( list ):
-
     return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
+
+#https://stackoverflow.com/questions/21975228/redis-python-how-to-delete-all-keys-according-to-a-specific-pattern-in-python
+def deleteRedisDB( scandate ):
+	count = 0
+	pipe = r.pipeline()
+	for key in r.scan_iter(str(scandate) + '*'):
+		print(key)
+		pipe.delete(key)
+		count += 1
+	pipe.execute()
+	return count
+
+def countBarcodes( scandate ):
+	barcodes = {}
+	tally = {}
+	total = 0
+	for key in r.scan_iter(str(scandate) + '*'):
+		print(key)
+		barcodes[key] = r.hgetall(key)
+		tally[key] = sumRedisValues(r.hvals(key))
+		total += tally[key]
+	return barcodes, tally, total
 
 file=sys.argv[1]
 latestscan=0
+scangroup=0
 previousline=None
+previousgroup=scangroup
 with open(file) as f:
 	for line in f:
 		line = line.replace('\n','').split(',')
 		datescanned = datetime.datetime.strptime(line[0], '%d/%m/%Y').strftime('%Y%m%d')
 #		print( datescanned )
 		if( int(datescanned) > latestscan ):
+			if( latestscan > 0 ):
+				deleteRedisDB(latestscan)
+			deleteRedisDB(datescanned)
 			latestscan = int(datescanned)
-			r.delete(latestscan)
+			scangroup = 0
 
-		if( line[3].contains("CLEARCLEARCLEAR" ):
-			r.delete(int(datescanned))
-		elif( line[3].contains("CLEARLASTCLEAR" ):
+		#if theres some hideous scan error, you can start from the beginning or go back one
+		if( 'CLEARCLEARCLEAR' in line[3] ):
+			deleteRedisDB(latestscan)
+		#note: theres a button on the Motorola CS3000 that does exactly this, but better
+		elif( 'CLEARLASTCLEAR' in line[3] ):
 			if( previousline != None ):
-				r.hincrby(int(datescanned), previousline,-1)
+				r.hincrby(f'{latestscan}_{previousgroup}', previousline,-1)
+
+		#breaks down the count by pallet
+		elif( 'scangroupincr' in line[3] ):
+			scangroup = (scangroup + 1 ) % 256
+		elif( 'scangroupdecr' in line[3] ):
+			scangroup = (scangroup - 1 ) % 256
+
 		else:
-			r.hincrby(int(datescanned), line[3],1)
+			r.hincrby(f'{latestscan}_{scangroup}', line[3],1)
 			previousline=line[3]
+			previousgroup=scangroup
 
 
 
 scannedlist = {}
 scannedlist[latestscan] = {}
-scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
-scannedlist[latestscan]['_tally'] = sumRedisValues(r.hvals(latestscan))
+scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = countBarcodes(latestscan)
+
+#scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
+#scannedlist[latestscan]['_tally'] = sumRedisValues(r.hvals(latestscan))
 #scannedlist[latestscan]['barcodes'] = stringifyFields(latestscan)
 #scannedlist[latestscan]['tally'] = sum( convertArrayToInts(r.hvals(latestscan)))
 
