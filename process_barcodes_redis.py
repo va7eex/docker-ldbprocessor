@@ -32,10 +32,11 @@ def sumRedisValues( list ):
 
 #https://stackoverflow.com/questions/21975228/redis-python-how-to-delete-all-keys-according-to-a-specific-pattern-in-python
 def deleteRedisDB( scandate ):
+	print( f'Deleting databases for {scandate}:' )
 	count = 0
 	pipe = r.pipeline()
 	for key in r.scan_iter(str(scandate) + '*'):
-		print(key)
+		print(f'\t{key}')
 		pipe.delete(key)
 		count += 1
 	pipe.execute()
@@ -57,6 +58,8 @@ latestscan=0
 scangroup=0
 previousline=None
 previousgroup=scangroup
+forReview=[]
+
 with open(file) as f:
 	for line in f:
 		line = line.replace('\n','').split(',')
@@ -68,10 +71,12 @@ with open(file) as f:
 			deleteRedisDB(datescanned)
 			latestscan = int(datescanned)
 			scangroup = 0
+			forReview=[]
 
 		#if theres some hideous scan error, you can start from the beginning or go back one
 		if( 'CLEARCLEARCLEAR' in line[3] ):
 			deleteRedisDB(latestscan)
+			forReview=[]
 		#note: theres a button on the Motorola CS3000 that does exactly this, but better
 		elif( 'CLEARLASTCLEAR' in line[3] ):
 			if( previousline != None ):
@@ -85,6 +90,8 @@ with open(file) as f:
 
 		else:
 			r.hincrby(f'{latestscan}_{scangroup}', line[3],1)
+			if( len(line[3]) > 20 ):
+				forReview.append(line[3])
 			previousline=line[3]
 			previousgroup=scangroup
 
@@ -93,7 +100,8 @@ with open(file) as f:
 scannedlist = {}
 scannedlist[latestscan] = {}
 scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = countBarcodes(latestscan)
-
+if( len(forReview) > 0 ):
+	scannedlist[latestscan]['_possible_scan_errors'] = forReview
 #scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
 #scannedlist[latestscan]['_tally'] = sumRedisValues(r.hvals(latestscan))
 #scannedlist[latestscan]['barcodes'] = stringifyFields(latestscan)
