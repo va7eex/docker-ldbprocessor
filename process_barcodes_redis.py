@@ -33,6 +33,7 @@ def sumRedisValues( list ):
 
 file=sys.argv[1]
 latestscan=0
+previousline=None
 with open(file) as f:
 	for line in f:
 		line = line.replace('\n','').split(',')
@@ -42,7 +43,16 @@ with open(file) as f:
 			latestscan = int(datescanned)
 			r.delete(latestscan)
 
-		r.hincrby(int(datescanned), line[3],1)
+		if( line[3].contains("CLEARCLEARCLEAR" ):
+			r.delete(int(datescanned))
+		elif( line[3].contains("CLEARLASTCLEAR" ):
+			if( previousline != None ):
+				r.hincrby(int(datescanned), previousline,-1)
+		else:
+			r.hincrby(int(datescanned), line[3],1)
+			previousline=line[3]
+
+
 
 scannedlist = {}
 scannedlist[latestscan] = {}
