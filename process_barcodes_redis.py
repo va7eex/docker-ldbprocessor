@@ -59,6 +59,7 @@ scangroup=0
 previousline=None
 previousgroup=scangroup
 forReview=[]
+scanuser=''
 
 with open(file) as f:
 	for line in f:
@@ -72,6 +73,7 @@ with open(file) as f:
 			latestscan = int(datescanned)
 			scangroup = 0
 			forReview=[]
+			scanuser=''
 
 		#if theres some hideous scan error, you can start from the beginning or go back one
 		if( 'CLEARCLEARCLEAR' in line[3] ):
@@ -82,6 +84,9 @@ with open(file) as f:
 			if( previousline != None ):
 				r.hincrby(f'{latestscan}_{previousgroup}', previousline,-1)
 
+		elif( 'scanuser_' in line[3] ):
+			scanuser=line[3].replace('scanuser_','')
+
 		#breaks down the count by pallet
 		elif( 'scangroupincr' in line[3] ):
 			scangroup = (scangroup + 1 ) % 256
@@ -89,7 +94,7 @@ with open(file) as f:
 			scangroup = (scangroup - 1 ) % 256
 
 		else:
-			r.hincrby(f'{latestscan}_{scangroup}', line[3],1)
+			r.hincrby(f'{latestscan}_{scangroup}{scanuser}', line[3],1)
 			if( len(line[3]) > 20 ):
 				forReview.append(line[3])
 			previousline=line[3]
