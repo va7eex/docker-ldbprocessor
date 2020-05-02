@@ -80,7 +80,7 @@ cnx.commit()
 def itmdb_pricechange( sku, price ):
 	cursor = cnx.cursor(buffered=True)
 
-	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
+	query = f'SELECT price, lastupdated FROM pricechangelist WHERE sku={sku}'
 
 	cursor.execute(query)
 
@@ -90,12 +90,11 @@ def itmdb_pricechange( sku, price ):
 #			percent_diff = 0
 #			percent_diff = (price - float(dbprice.strip())) / float(dbprice.strip())
 			with open(pricereport, 'a') as fp:
-				fp.write('%s: %s changed to %s (last updated %s)\n'
-				% ( sku, dbprice, price, dbdate ))
-			query = "UPDATE pricechangelist SET price = %s WHERE sku = %s"%(price,sku)
+				fp.write(f'{sku}: {dbprice} changed to {price} (last updated {dbdate})\n')
+			query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
 			cursor.execute(query)
 	else:
-		query = ("INSERT INTO pricechangelist (sku, price) VALUES (%s, %s)"%(sku,price))
+		query = f'INSERT INTO pricechangelist (sku, price) VALUES {sku},{price}'
 		cursor.execute(query)
 	cnx.commit()
 	cursor.close()
