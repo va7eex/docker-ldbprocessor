@@ -1,4 +1,12 @@
 #!/bin/bash
+#title           :monitor_ldbinvoice.sh
+#description     :Monitors a directory for appearance of .xls files matching regex
+#author          :David Rickett
+#date            :2020
+#usage           :bash monitor_ldbinvoice.sh
+#notes           :Omnibus version of all monitor_*.sh files, unused under normal circumstances
+#bash_version    :Ubuntu LTS
+#==============================================================================
 
 FILEPATH=/var/ldbinvoice
 

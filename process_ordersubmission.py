@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+
+__author__ = "David Rickett"
+__credits__ = ["David Rickett"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "David Rickett"
+__email__ = "dap.rickett@gmail.com"
+__status__ = "Production"
+
 #"LDB Stocked Product Expected for Delivery"
 #"Third Party Warehouse Stocked Product Currently Unavailable"
 #end at "Subtotal:"

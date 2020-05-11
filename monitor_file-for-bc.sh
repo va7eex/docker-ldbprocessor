@@ -1,4 +1,12 @@
 #!/bin/bash
+#title           :monitor_file-for-bc.sh
+#description     :Monitors a directory for appearance of barcodes.csv
+#author          :David Rickett
+#date            :2020
+#usage           :bash monitor_file-for-bc.sh
+#notes           :Invoked by Docker Entrypoint command
+#bash_version    :Ubuntu LTS
+#==============================================================================
 
 FILEPATH=/var/ldbinvoice
 

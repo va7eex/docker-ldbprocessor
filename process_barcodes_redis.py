@@ -1,4 +1,12 @@
+#!/usr/bin/env python
 
+__author__ = "David Rickett"
+__credits__ = ["David Rickett"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "David Rickett"
+__email__ = "dap.rickett@gmail.com"
+__status__ = "Production"
 
 #start
 #SKU,"Product Description","Product Category",Size,Qty,UOM,"Price per UOM","Extended Price","SU Price","WPP Savings","Cont. Deposit","Original Order#"
