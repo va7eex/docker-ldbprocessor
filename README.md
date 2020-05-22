@@ -14,7 +14,8 @@ This image takes the output file from a Motorola CS3000 barcode scanner and form
 
 To make this work with other devices, a `barcodes.csv` file must be created with the headerless format: `%d/%m/%Y, %h:%M:%S, $arbitrarygarbage (unused), $barcode` per line, an example file would be:
 
-```$ cat barcodes.csv
+```csv
+$ cat barcodes.csv
 
 32/13/1966, 13:50:53, 3, C1625575
 32/13/1966, 13:50:53, 3, C1625579
