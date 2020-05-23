@@ -23,29 +23,25 @@ from datetime import date
 #import mysqlclient
 from mysql.connector import (connection)
 
-from constants import MYSQL_USER
-from constants import MYSQL_PASS
-from constants import MYSQL_IP
-from constants import MYSQL_PORT
-from constants import MYSQL_DATABASE
-from constants import REDIS_IP
-from constants import REDIS_PORT
-
+MYSQL_IP='127.0.0.1'
+MYSQL_PORT=3306
+MYSQL_USER=None
+MYSQL_PASS=None
+MYSQL_DB=None
+REDIS_IP='127.0.0.1'
+REDIS_PORT=6783
 
 DIRECTORY='/var/ldbinvoice'
 PB_FILE='processedbarcodes.json'
 
-cnx = connection.MySQLConnection(user=MYSQL_USER, password=MYSQL_PASS,
-                                host=MYSQL_IP,
-                                port=MYSQL_PORT,
-                                database=MYSQL_DATABASE)
+cnx = None
 
 
 orderdate='nodatefound'
 
-file=sys.argv[1]
-outfile=sys.argv[2]
-pricereport=sys.argv[3]
+file=None
+outfile=None
+pricereport=None
 
 #exists = os.path.isfile('ldbinvoice/processedbarcodes.json')
 exists = True
@@ -55,33 +51,41 @@ if not exists:
 #else:
 #	with open('ldbinvoice/processed_barcodes.json', 'r') as fp:
 
-cur = cnx.cursor(buffered=True)
-cur.execute('''CREATE TABLE IF NOT EXISTS pricechangelist
-	(sku MEDIUMINT(8) ZEROFILL,
-	price VARCHAR(20),
-	lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)''')
+def mysql_setup():
+	global cnx
+	cnx = connection.MySQLConnection(user=MYSQL_USER, password=MYSQL_PASS,
+				host=MYSQL_IP,
+				port=MYSQL_PORT,
+				database=MYSQL_DB)
+
+
+	cur = cnx.cursor(buffered=True)
+	cur.execute('''CREATE TABLE IF NOT EXISTS pricechangelist
+		(sku MEDIUMINT(8) ZEROFILL,
+		price VARCHAR(20),
+		lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)''')
 
 #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
 #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
-cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
-	id INT NOT NULL AUTO_INCREMENT,
-	sku MEDIUMINT(6) ZEROFILL,
-	productdescription VARCHAR(255),
-	productcategory VARCHAR(255),
-	size VARCHAR(20),
-	qty SMALLINT UNSIGNED,
-	uom VARCHAR(20),
-	priceperuom FLOAT(7,4),
-	extendedprice FLOAT(7,4),
-	suquantity SMALLINT UNSIGNED,
-	suprice FLOAT(7,4),
-	wppsavings FLOAT(7,4),
-	contdeposit FLOAT(7,4),
-	originalorder INT(10),
-	invoicedate VARCHAR(20),
-	PRIMARY KEY (id))''')
-cur.close()
-cnx.commit()
+	cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
+		id INT NOT NULL AUTO_INCREMENT,
+		sku MEDIUMINT(6) ZEROFILL,
+		productdescription VARCHAR(255),
+		productcategory VARCHAR(255),
+		size VARCHAR(20),
+		qty SMALLINT UNSIGNED,
+		uom VARCHAR(20),
+		priceperuom FLOAT(7,4),
+		extendedprice FLOAT(7,4),
+		suquantity SMALLINT UNSIGNED,
+		suprice FLOAT(7,4),
+		wppsavings FLOAT(7,4),
+		contdeposit FLOAT(7,4),
+		originalorder INT(10),
+		invoicedate VARCHAR(20),
+		PRIMARY KEY (id))''')
+	cur.close()
+	cnx.commit()
 
 #itemlineok = re.compile('\d+,[\d\w \.]+,\w+,(\d{0,3}\()?[\w\d \.]+\)?,\d+,(BTL|CS),\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+,\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+')
 
@@ -201,40 +205,89 @@ def printpricechangelist( date ):
 dollaramount = re.compile('\$\d+,\d{3}')
 
 emptyline = ',,,,,,,,,,,,,'
-with open(file) as f:
-	append=False
-	for line in f:
-		#trim all whitespace to start`
-		line = line.strip()
+def processCSV(file):
+	with open(file) as f:
+		append=False
+		for line in f:
+			#trim all whitespace to start`
+			line = line.strip()
 
-#		if( not append ):
-#			print(line)
+	#		if( not append ):
+	#			print(line)
 
-		if(line.find('Invoice Date:') > -1 ):
-			orderdatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
-#			orderdate = datetime.datetime.strptime(orderdatefromldb,'%Y-%m-%d %H:%M:%S.%f')
-			orderdate = datetime.datetime.strptime(orderdatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
-			print(orderdate)
-		if( line.strip() == emptyline.strip() and append ):
-			append=False
-		if( append ):
-			imparsabledollaramount = dollaramount.search(line)
-			if( imparsabledollaramount is not None ):
-				print( m.group() )
-				line.replace(m.group(), m.group().replace(',',''))
+			if(line.find('Invoice Date:') > -1 ):
+				orderdatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
+	#			orderdate = datetime.datetime.strptime(orderdatefromldb,'%Y-%m-%d %H:%M:%S.%f')
+				orderdate = datetime.datetime.strptime(orderdatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
+				print(orderdate)
+			if( line.strip() == emptyline.strip() and append ):
+				append=False
+			if( append ):
+				imparsabledollaramount = dollaramount.search(line)
+				if( imparsabledollaramount is not None ):
+					print( m.group() )
+					line.replace(m.group(), m.group().replace(',',''))
 
-			line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
-			line = re.sub( '( , |, | ,)', ',', line )
-			line = re.sub( '(,,|, ,)', ',0.00,', line )
+				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
+				line = re.sub( '( , |, | ,)', ',', line )
+				line = re.sub( '(,,|, ,)', ',0.00,', line )
 
-			addlineitem(line, orderdate)
-		if( line.find( 'SKU,Product Description') > -1):
-			append=True
-			emptyline = re.sub('[^,]','',line)
-			print(emptyline)
-			print(line.strip())
+				addlineitem(line, orderdate)
+			if( line.find( 'SKU,Product Description') > -1):
+				append=True
+				emptyline = re.sub('[^,]','',line)
+				print(emptyline)
+				print(line.strip())
 
-printinvoicetofile( orderdate )
-printpricechangelist( orderdate )
+	printinvoicetofile( orderdate )
+	printpricechangelist( orderdate )
 
-cnx.close()
+	cnx.close()
+
+def importconfig(file):
+
+def main(file, outfile, outfile2, **kwargs):
+        print('Called myscript with:')
+        for k, v in kwargs.items():
+                print('keyword argument: {} = {}'.format(k, v))
+
+        global MYSQL_USER
+        global MYSQL_PASS
+        global MYSQL_IP
+        global MYSQL_PORT
+	global MYSQL_DB
+        global REDIS_IP
+        global REDIS_PORT
+
+	global file
+	global outfile
+	global pricereport
+
+	file=sys.argv[1]
+	outfile=sys.argv[2]
+	pricereport=sys.argv[3]
+
+        #import a config file
+        if 'configfile' in kwargs:
+                importconfig(kwargs['configfile'])
+
+        if 'MYSQL_USER' in kwargs:
+                MYSQL_USER = kwargs['MYSQL_USER']
+        if 'MYSQL_PASS' in kwargs:
+                MYSQL_PASS = kwargs['MYSQL_PASS']
+        if 'MYSQL_IP' in kwargs:
+                MYSQL_IP = kwargs['MYSQL_IP']
+        if 'MYSQL_PORT' in kwargs:
+                MYSQL_PORT = int(kwargs['MYSQL_PORT'])
+        if 'MYSQL_DB' in kwargs:
+                MYSQL_DB = int(kwargs['MYSQL_DB'])
+        if 'REDIS_IP' in kwargs:
+                REDIS_IP = kwargs['REDIS_IP']
+        if 'REDIS_PORT' in kwargs:
+                REDIS_PORT = int(kwargs['REDIS_PORT'])
+
+	mysql_setup()
+        processCSV(file)
+
+if __name__=='__main__':
+        main(sys.argv[1], sys.argv[2], sys.argv[3], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs

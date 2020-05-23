@@ -2,7 +2,16 @@ FROM ubuntu:18.04
 
 LABEL maintainer="David Rickett"
 
+ARG TZ=America/Vancouver
 ARG DEBIAN_FRONTEND=noninteractive
+
+ENV MYSQL_IP=127.0.0.1
+ENV MYSQL_PORT=3306
+ENV MYSQL_USER=EXAMPLE
+ENV MYSQL_PASS=EXAMPLE
+ENV MYSQL_DB
+ENV REDIS_IP=ldbredis
+ENV REDIS_PORT=6379
 
 RUN apt update
 RUN apt upgrade -y
@@ -13,7 +22,6 @@ RUN apt install -y python3 \
 	inotify-tools \
 	csvkit
 
-ADD ./constants.py /usr/share/
 ADD ./monitor_file-for-bc-redis.sh /usr/share/monitor_filesystem.sh
 ADD ./process_barcodes_redis.py /usr/share/
 

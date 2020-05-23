@@ -3,7 +3,7 @@ services:
 
   #database
 
-  LDBdatabase_dev:
+  LDBdatabase:
     image: linuxserver/mariadb:latest
     container_name: LDBdatabase
     environment:
@@ -14,8 +14,6 @@ services:
       - MYSQL_DATABASE=replacedb
       - MYSQL_USER=replaceuser
       - MYSQL_PASSWORD=replacepwd
-    ports:
-      - 3307:3306
     restart: always
     networks:
       - ldbbackend
@@ -39,12 +37,17 @@ services:
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
+      - MYSQL_IP=replacesqlip
+      - MYSQL_PORT=replacesqlport
+      - MYSQL_DATABASE=replacedb
+      - MYSQL_USER=replaceuser
+      - MYSQL_PASSWORD=replacepwd
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldbredis
-      - database
+      - LDBdatabase
     networks:
       - ldbbackend
   ldb_processor_os:
@@ -57,13 +60,18 @@ services:
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
+      - MYSQL_IP=replacesqlip
+      - MYSQL_PORT=replacesqlport
+      - MYSQL_DATABASE=replacedb
+      - MYSQL_USER=replaceuser
+      - MYSQL_PASSWORD=replacepwd
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
       - /home/bibwsstaff/googledrive/OrderSubmission:/var/ordersubmission
     restart: always
     depends_on:
       - ldbredis
-      - database
+      - LDBdatabase
     networks:
       - ldbbackend
   ldb_processor_ar:
@@ -76,12 +84,17 @@ services:
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
+      - MYSQL_IP=replacesqlip
+      - MYSQL_PORT=replacesqlport
+      - MYSQL_DATABASE=replacedb
+      - MYSQL_USER=replaceuser
+      - MYSQL_PASSWORD=replacepwd
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldbredis
-      - database
+      - LDBdatabase
     networks:
       - ldbbackend
 networks:

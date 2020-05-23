@@ -45,15 +45,8 @@ echo "Finally, what will be the root password? (this will be stored in plain tex
 
 read rootpw
 
-echo "MYSQL_IP='${myip}'" > ./constants.py
-echo "MYSQL_PORT='${myport}'" >> ./constants.py
-echo "MYSQL_DATABASE='${mydb}'" >> ./constants.py
-echo "MYSQL_USER='${myname}'" >> ./constants.py
-echo "MYSQL_PASS='${mypass}'" >> ./constants.py
-
-echo "REDIS_IP='${myredis}" >> ./constants.py
-echo "REDIS_PORT=${myredisport}" >> ./constants.py
-
+sed -i "s#replacesqlip#${myip}#g" ./ldb-compose.yaml
+sed -i "s#replacesqlport#${myport}#g" ./ldb-compose.yaml
 sed -i "s#replacerootpwd#${rootpw}#g" ./ldb-compose.yaml
 sed -i "s#replacedb#${mydb}#g" ./ldb-compose.yaml
 sed -i "s#replaceuser#${myname}#g" ./ldb-compose.yaml

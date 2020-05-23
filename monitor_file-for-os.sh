@@ -18,6 +18,14 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
 		html2csv $path$file -o /tmp/"${file%.*}.csv"
 		echo 'processing OSRPDF'
 		cp /tmp/"${file%.*}.csv" /var/ldbinvoice/"${file%.*}.csv"
-		python3 /usr/share/process_ordersubmission.py /tmp/"${file%.*}.csv" #>> $path$(date +%Y-%h-%d)"_log_ordersubmission.txt"
+		python3 /usr/share/process_ordersubmission.py \
+			/tmp/"${file%.*}.csv" \
+			MYSQL_IP=$MYSQL_IP \
+                        MYSQL_PORT=$MYSQL_PORT \
+                        MYSQL_USER=$MYSQL_USER \
+                        MYSQL_PASS=$MYSQL_PASS \
+                        MYSQL_DB=$MYSQL_DB \
+                        REDIS_IP=$MYSQL_IP \
+                        REDIS_PORT=$MYSQL_IP
 	fi
     done

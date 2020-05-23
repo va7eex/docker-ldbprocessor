@@ -17,6 +17,17 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
 		echo 'found '$path$file
 		in2csv $path$file > /tmp/"${file%.*}.csv"
 		echo 'processing ARINVOICE'
-		python3 /usr/share/process_arinvoice.py /tmp/"${file%.*}.csv" $path$(date +%Y-%h-%d)"_for-PO-import.txt" $path$(date +%Y-%h-%d)"_pricedeltareport.txt"
+		python3 /usr/share/process_arinvoice.py \
+			/tmp/"${file%.*}.csv" \
+			$path$(date +%Y-%h-%d)"_for-PO-import.txt" \
+			$path$(date +%Y-%h-%d)"_pricedeltareport.txt" \
+			MYSQL_IP=$MYSQL_IP \
+			MYSQL_PORT=$MYSQL_PORT \
+			MYSQL_USER=$MYSQL_USER \
+			MYSQL_PASS=$MYSQL_PASS \
+			MYSQL_DB=$MYSQL_DB \
+			REDIS_IP=$MYSQL_IP \
+			REDIS_PORT=$MYSQL_IP
+
 	fi
     done
