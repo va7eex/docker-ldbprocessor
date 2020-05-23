@@ -81,7 +81,7 @@ def getorderfromdatabase(ordernumber):
 	cursor = cnx.cursor(buffered=True)
 
 #	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
-	query = ('''SELECT sku, upc, qty FROM orderlog WHERE ordernumber=%s''')%(ordernumber)
+	query = f'SELECT sku, upc, qty FROM orderlog WHERE ordernumber={ordernumber}'
 	cursor.execute(query)
 
 	rows = cursor.fetchall()
@@ -89,7 +89,7 @@ def getorderfromdatabase(ordernumber):
 	for row in rows:
 		sku, upc, qty = row
 #		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
-		print(('%s (%s) x %s')%(f'{sku:06}', upc, qty))
+		print(f'{sku:06} ({upc}) x {qty}')
 
 	cursor.close()
 
@@ -97,8 +97,7 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 	cursor = cnx.cursor(buffered=True)
 
 	if( itemlineok.match(line) is None ):
-		print( 'Line failed validation:' )
-		print(string)
+		print( f'Line failed validation:\n\t{line}' )
 		return;
 
 	linesplit = line.split(',')
@@ -110,11 +109,9 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 	uom = linesplit[4].strip()
 	qty = linesplit[5].strip()
 
-	query = ('''INSERT INTO orderlog (
-		ordernumber, orderdate, sku, upc, productdescription, sellingunitsize, uom, qty, thirdparty ) VALUES ( %s, %s, %s, %s, %s, '%s', '%s', '%s', %s )
-		''') % (
-		ordnum, orddate, sku, upc, productdescription,
-		sellingunitsize, uom, qty, thirdparty )
+	query = f'''INSERT INTO orderlog (
+		ordernumber, orderdate, sku, upc, productdescription, sellingunitsize, uom, qty, thirdparty ) VALUES ( {ordnum}, {orddate}, {sku}, {upc}, '{productdescription}', '{sellingunitsize}', '{uom}', '{qty}', {thirdparty} )
+		'''
 
 #	print(query)
 	cursor.execute(query)
