@@ -35,5 +35,13 @@ For future reference the unused field of `$barcodeType` is in reference to the h
 
 # LDBprocessor_os
 
+This container processes LDB Store 100 order submission reports. It accepts files matching the regex `XOMWOSRPDF_[0-9]+_[0-9]+\.[Xx][Ll][Ss]`, such as XOMWOSRPDF_1_182719182.xls. The goal of this container is primarily to extract the UPC codes to cross-reference against the output of ldbprocessor-bc and the input of ldbprocessor-ar.
+
+Order Submission Reports are, contrary to the `PDF` in the file name, html files with a .xls extension.
 
 # LDBprocessor_ar
+
+This container processes LDB Store 100 Accounts Receivable (AR) invoices. It accepts files matching the regex `XXARNEWINVOICE_[0-9]+_[0-9]+\.[Xx][Ll][Ss]` such as XXARNEWINVOICE_29_1878218921.xls and outputs a headerless csv file matching the format `$(date +%Y-%h-%d)-for-PO-import.txt` to be imported into the Profitek backoffice. There is as of 2020-05-25 no ability to cross reference files.
+
+
+ARinvoice files are shipped as .xls formatted files that have to be converted to .csv.
