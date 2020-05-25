@@ -12,7 +12,7 @@ If running SMB: the user and/or group of each docker app must have read/write pe
 
 This image takes the output file from a Motorola CS3000 barcode scanner and formats them into a (mostly) human readable count of all barcodes scanned per shipment.
 
-To make this work with other devices, a `barcodes.csv` file must be created with the headerless format: `%d/%m/%Y, %h:%M:%S, $arbitrarygarbage (unused), $barcode` per line, an example file would be:
+To make this work with other devices, a `barcodes.csv` file must be created with the headerless format: `%d/%m/%Y, %h:%M:%S, $barcodeType (unused), $barcode` per line, an example file would be:
 
 ```csv
 $ cat barcodes.csv
@@ -30,6 +30,10 @@ $ cat barcodes.csv
 [...]
 ```
 
+For future reference the unused field of `$barcodeType` is in reference to the hexadecimal values (just pretend the `0x` is prepended to everything in column 3) of Appendix Table B-1 on the [Zebra CS3000/3070 manual](https://www.zebra.com/content/dam/zebra_new_ia/en-us/manuals/barcode-scanners/cs3070-prg-en.pdf). While this information isn't particularly useful in the process of receiving inventory, it is kind of interesting that the majority of barcodes on a particular pallet are Interleaved 2 or 5.
+
+
 # LDBprocessor_os
+
 
 # LDBprocessor_ar
