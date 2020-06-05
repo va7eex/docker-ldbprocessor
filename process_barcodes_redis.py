@@ -70,7 +70,7 @@ previousgroup=scangroup
 forReview=[]
 scanuser=''
 
-def mainloop(file):
+def processCSV(file):
 	with open(file) as f:
 		for line in f:
 			line = line.replace('\n','').split(',')
@@ -126,6 +126,7 @@ def mainloop(file):
 	    json.dump(scannedlist,fp,indent=4,separators=(',', ': '),sort_keys=True)
 
 def importconfig(file):
+	return
 
 def main(file, outfile, **kwargs):
         print('Called myscript with:')
@@ -154,7 +155,7 @@ def main(file, outfile, **kwargs):
         if 'MYSQL_PORT' in kwargs:
                 MYSQL_PORT = int(kwargs['MYSQL_PORT'])
         if 'MYSQL_DB' in kwargs:
-                MYSQL_DB = int(kwargs['MYSQL_DB'])
+                MYSQL_DB = kwargs['MYSQL_DB']
         if 'REDIS_IP' in kwargs:
                 REDIS_IP = kwargs['REDIS_IP']
         if 'REDIS_PORT' in kwargs:
@@ -162,7 +163,7 @@ def main(file, outfile, **kwargs):
 	r = redis.StrictRedis(REDIS_IP, REDIS_PORT, charset='utf-8',decode_responses=True)
                 REDIS_PORT = int(kwargs['REDIS_PORT'])
 
-	mainloop(file, outfile)
+	processCSV(file, outfile)
 
 if __name__=='__main__':
         main(sys.argv[1], sys.argv[2], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs

@@ -48,7 +48,7 @@ itemlist3rdparty = []
 itemlist3rdpartynonstock = []
 append=0
 
-orderline = re.compile('Order *, *\d{4,},$')
+orderline = re.compile('Order #:, ?\d{4,}$')
 orderdateline = re.compile('Order Booking Date *, *\d{8},$')
 ordershipdateline = re.compile('Expected Ship Date *, *\d{8},$')
 
@@ -59,6 +59,10 @@ itemlistline = re.compile('^\d{8}')
 itemlineok = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
 def getorderfromdatabase(ordernumber):
+
+	if ordernumber == 'NaN':
+		return
+
 	cursor = cnx.cursor(buffered=True)
 
 #	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
@@ -100,6 +104,9 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 	cursor.close()
 
 def processCSV(file):
+	global ordernum
+	global orderdate
+	global ordershipdate
 	with open(file) as f:
 		for line in f:
 
@@ -182,8 +189,6 @@ def processCSV(file):
 	#with open('/tmp/Order_' + list['OrderNumber']+'.json', 'w') as fp:
 	#	json.dump(list,fp,indent=4,separators=(',', ': '),sort_keys=True)
 
-	getorderfromdatabase(ordernum)
-	cnx.close()
 
 def mysql_setup():
 	global cnx
@@ -210,6 +215,7 @@ def mysql_setup():
 
 
 def importconfig(file):
+	return 0
 
 def main(file, **kwargs):
 	print('Called myscript with:')
@@ -237,7 +243,7 @@ def main(file, **kwargs):
 	if 'MYSQL_PORT' in kwargs:
 		MYSQL_PORT = int(kwargs['MYSQL_PORT'])
 	if 'MYSQL_DB' in kwargs:
-		MYSQL_DB = int(kwargs['MYSQL_DB'])
+		MYSQL_DB = kwargs['MYSQL_DB']
 	if 'REDIS_IP' in kwargs:
 		REDIS_IP = kwargs['REDIS_IP']
 	if 'REDIS_PORT' in kwargs:
@@ -245,6 +251,9 @@ def main(file, **kwargs):
 
 	mysql_setup()
 	processCSV(file)
+
+	getorderfromdatabase(ordernum)
+	cnx.close()
 
 if __name__=='__main__':
 	main(sys.argv[1], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs

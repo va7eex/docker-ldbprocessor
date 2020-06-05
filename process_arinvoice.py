@@ -108,6 +108,8 @@ def itmdb_pricechange( sku, price ):
 	else:
 		query = f'INSERT INTO pricechangelist (sku, price) VALUES {sku},{price}'
 		cursor.execute(query)
+		with open(pricereport, 'a') as fp:
+			fp.write(f'[NEW] {sku}: {price} )\n')
 	cnx.commit()
 	cursor.close()
 
@@ -245,6 +247,7 @@ def processCSV(file):
 	cnx.close()
 
 def importconfig(file):
+	return 0
 
 def main(file, outfile, outfile2, **kwargs):
         print('Called myscript with:')
@@ -280,7 +283,7 @@ def main(file, outfile, outfile2, **kwargs):
         if 'MYSQL_PORT' in kwargs:
                 MYSQL_PORT = int(kwargs['MYSQL_PORT'])
         if 'MYSQL_DB' in kwargs:
-                MYSQL_DB = int(kwargs['MYSQL_DB'])
+                MYSQL_DB = kwargs['MYSQL_DB']
         if 'REDIS_IP' in kwargs:
                 REDIS_IP = kwargs['REDIS_IP']
         if 'REDIS_PORT' in kwargs:
