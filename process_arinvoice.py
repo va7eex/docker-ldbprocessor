@@ -106,10 +106,10 @@ def itmdb_pricechange( sku, price ):
 			query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
 			cursor.execute(query)
 	else:
-		query = f'INSERT INTO pricechangelist (sku, price) VALUES {sku},{price}'
+		query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
 		cursor.execute(query)
 		with open(pricereport, 'a') as fp:
-			fp.write(f'[NEW] {sku}: {price} )\n')
+			fp.write(f'[NEW] {sku:06}: {price}\n')
 	cnx.commit()
 	cursor.close()
 
@@ -206,9 +206,10 @@ def printpricechangelist( date ):
 
 dollaramount = re.compile('\$\d+,\d{3}')
 
-emptyline = ',,,,,,,,,,,,,'
-def processCSV(file):
-	with open(file) as f:
+def processCSV(inputfile):
+	#this is what an empty line looks like
+	emptyline = ',,,,,,,,,,,,,'
+	with open(inputfile) as f:
 		append=False
 		for line in f:
 			#trim all whitespace to start`
@@ -246,51 +247,52 @@ def processCSV(file):
 
 	cnx.close()
 
-def importconfig(file):
+def importconfig(inputfile):
 	return 0
 
-def main(file, outfile, outfile2, **kwargs):
-        print('Called myscript with:')
-        for k, v in kwargs.items():
-                print('keyword argument: {} = {}'.format(k, v))
+def main(file_input, file_output, file_pricereport, **kwargs):
 
-        global MYSQL_USER
-        global MYSQL_PASS
-        global MYSQL_IP
-        global MYSQL_PORT
+	global MYSQL_USER
+	global MYSQL_PASS
+	global MYSQL_IP
+	global MYSQL_PORT
 	global MYSQL_DB
-        global REDIS_IP
-        global REDIS_PORT
+	global REDIS_IP
+	global REDIS_PORT
 
 	global file
 	global outfile
 	global pricereport
 
-	file=sys.argv[1]
-	outfile=sys.argv[2]
-	pricereport=sys.argv[3]
+	file=file_input
+	outfile=file_output
+	pricereport=file_pricereport
 
-        #import a config file
-        if 'configfile' in kwargs:
-                importconfig(kwargs['configfile'])
+	print('Called myscript with:')
+	for k, v in kwargs.items():
+		print('keyword argument: {} = {}'.format(k, v))
 
-        if 'MYSQL_USER' in kwargs:
-                MYSQL_USER = kwargs['MYSQL_USER']
-        if 'MYSQL_PASS' in kwargs:
-                MYSQL_PASS = kwargs['MYSQL_PASS']
-        if 'MYSQL_IP' in kwargs:
-                MYSQL_IP = kwargs['MYSQL_IP']
-        if 'MYSQL_PORT' in kwargs:
-                MYSQL_PORT = int(kwargs['MYSQL_PORT'])
-        if 'MYSQL_DB' in kwargs:
-                MYSQL_DB = kwargs['MYSQL_DB']
-        if 'REDIS_IP' in kwargs:
-                REDIS_IP = kwargs['REDIS_IP']
-        if 'REDIS_PORT' in kwargs:
-                REDIS_PORT = int(kwargs['REDIS_PORT'])
+	#import a config file
+	if 'configfile' in kwargs:
+		importconfig(kwargs['configfile'])
+
+	if 'MYSQL_USER' in kwargs:
+		MYSQL_USER = kwargs['MYSQL_USER']
+	if 'MYSQL_PASS' in kwargs:
+		MYSQL_PASS = kwargs['MYSQL_PASS']
+	if 'MYSQL_IP' in kwargs:
+		MYSQL_IP = kwargs['MYSQL_IP']
+	if 'MYSQL_PORT' in kwargs:
+		MYSQL_PORT = int(kwargs['MYSQL_PORT'])
+	if 'MYSQL_DB' in kwargs:
+		MYSQL_DB = kwargs['MYSQL_DB']
+	if 'REDIS_IP' in kwargs:
+		REDIS_IP = kwargs['REDIS_IP']
+	if 'REDIS_PORT' in kwargs:
+		REDIS_PORT = int(kwargs['REDIS_PORT'])
 
 	mysql_setup()
-        processCSV(file)
+	processCSV(file)
 
 if __name__=='__main__':
-        main(sys.argv[1], sys.argv[2], sys.argv[3], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs
+	main(sys.argv[1], sys.argv[2], sys.argv[3], **dict(arg.split('=') for arg in sys.argv[4:])) # kwargs
