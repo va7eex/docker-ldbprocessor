@@ -89,6 +89,28 @@ def mysql_setup():
 
 #itemlineok = re.compile('\d+,[\d\w \.]+,\w+,(\d{0,3}\()?[\w\d \.]+\)?,\d+,(BTL|CS),\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+,\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+')
 
+
+# write price report to file, later will make this a redis DB
+def addtopricechangelist( sku, price, databaseprice=None, databasedate=None, newitem=False ):
+	with open(pricereport, 'a') as fp:
+		if not newitem:
+			alert=''
+			if( (price - databaseprice)/ databaseprice > 0.1 ):
+				alert += '[pc>10%] '
+			if( price > (databaseprice + 5) ):
+				alert += '[pc$5+] '
+			elif( price > (databaseprice + 3) ):
+				alert += '[pc$3+] '
+			elif( price > (databaseprice + 1) ):
+				alert += '[pc$1+] '
+			fp.write(f'{alert}{sku:06}: {databaseprice} changed to {price} (last updated {databasedate})\n')
+		else:
+			fp.write(f'[NEW] {sku:06}: {price}\n')
+
+#does nothing yet
+def generatepricechangereport():
+	return
+
 def itmdb_pricechange( sku, price ):
 	cursor = cnx.cursor(buffered=True)
 
@@ -101,15 +123,13 @@ def itmdb_pricechange( sku, price ):
 		if( float(dbprice.strip()) != float(price) ):
 #			percent_diff = 0
 #			percent_diff = (price - float(dbprice.strip())) / float(dbprice.strip())
-			with open(pricereport, 'a') as fp:
-				fp.write(f'{sku}: {dbprice} changed to {price} (last updated {dbdate})\n')
+			addtopricechangelist( sku, price, databaseprice=float(dbprice.strip()), databasedate=float(dbdate.strip()) )
 			query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
 			cursor.execute(query)
 	else:
 		query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
 		cursor.execute(query)
-		with open(pricereport, 'a') as fp:
-			fp.write(f'[NEW] {sku:06}: {price}\n')
+		addtopricechangelist( sku, price, newitem=True )
 	cnx.commit()
 	cursor.close()
 
