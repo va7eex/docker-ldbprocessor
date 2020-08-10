@@ -35,6 +35,39 @@ key_scan = 'scanned'
 key_tally = '_tally'
 key_checksum = 'checksum'
 
+barcodetypelookuptable = {
+	'01':'Code 39',
+	'02':'Codabar',
+	'03':'Code 127',
+	'0C':'Code 11',
+	'72':'Chinese 2 of 5',
+	'04':'Discrete 2 of 5',
+	'05':'IATA 2 of 5',
+	'06':'Interleaved 2 of 5',
+	'07':'Code 93',
+	'08':'UPC-A',
+	'48':'UPC-A.2',
+	'88':'UPC-A.5',
+	'09':'UPC-E0',
+	'49':'UPC-E0.2',
+	'89':'UPC-E0.5',
+	'0A':'EAN-8',
+	'4A':'EAN-8.2',
+	'8A':'EAN-8.5',
+	'0B':'EAN-13',
+	'4B':'EAN-13.2',
+	'8B':'EAN-13.5',
+	'0E':'MSI',
+	'0F':'GS1-128',
+	'10':'UPC-E1',
+	'50':'UPC-E1.2',
+	'90':'UPC-E1.5',
+	'15':'Trioptic Code 39',
+	'17':'Bookland EAN',
+	'23':'GS1 Databar Ltd',
+	'24':'GS1 Databar Omni',
+	'25':'GS1 Databar Exp'
+}
 
 def sumRedisValues( list ):
     return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
@@ -57,20 +90,21 @@ def countBarcodes( scandate ):
 	total = 0
 	for key in r.scan_iter(str(scandate) + '*'):
 		print(key)
-		barcodes[key] = r.hgetall(key)
-		tally[key] = sumRedisValues(r.hvals(key))
-		total += tally[key]
+		if not f'{scandate}_scanstats' in key:
+			barcodes[key] = r.hgetall(key)
+			tally[key] = sumRedisValues(r.hvals(key))
+			total += tally[key]
 	return barcodes, tally, total
 
-file=sys.argv[1]
-latestscan=0
-scangroup=0
-previousline=None
-previousgroup=scangroup
-forReview=[]
-scanuser=''
-
 def processCSV(file):
+
+	latestscan=0
+	scangroup=0
+	previousline=None
+	previousgroup=scangroup
+	forReview=[]
+	scanuser=''
+
 	with open(file) as f:
 		for line in f:
 			line = line.replace('\n','').split(',')
@@ -104,7 +138,11 @@ def processCSV(file):
 				scangroup = (scangroup - 1 ) % 256
 
 			else:
+				# increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
 				r.hincrby(f'{latestscan}_{scangroup}{scanuser}', line[3],1)
+				#generate stats, I love stats.
+				r.hincrby(f'{latestscan}_scanstats', barcodetypelookuptable[f'{line[2]:02}'],1)
+				#if the data on the line is larger than 20 flag it for review.
 				if( len(line[3]) > 20 ):
 					forReview.append(line[3])
 				previousline=line[3]
@@ -115,6 +153,7 @@ def processCSV(file):
 	scannedlist = {}
 	scannedlist[latestscan] = {}
 	scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = countBarcodes(latestscan)
+	scannedlist[latestscan]['barcodes_by_type'] = r.hgetall(f'{latestscan}_scanstats')
 	if( len(forReview) > 0 ):
 		scannedlist[latestscan]['_possible_scan_errors'] = forReview
 	#scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
