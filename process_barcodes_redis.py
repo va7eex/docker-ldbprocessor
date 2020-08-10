@@ -38,7 +38,7 @@ key_checksum = 'checksum'
 barcodetypelookuptable = {
 	'01':'Code 39',
 	'02':'Codabar',
-	'03':'Code 127',
+	'03':'Code 128',
 	'0C':'Code 11',
 	'72':'Chinese 2 of 5',
 	'04':'Discrete 2 of 5',
@@ -96,7 +96,7 @@ def countBarcodes( scandate ):
 			total += tally[key]
 	return barcodes, tally, total
 
-def processCSV(file):
+def processCSV(file, outfile):
 
 	latestscan=0
 	scangroup=0
@@ -141,7 +141,9 @@ def processCSV(file):
 				# increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
 				r.hincrby(f'{latestscan}_{scangroup}{scanuser}', line[3],1)
 				#generate stats, I love stats.
-				r.hincrby(f'{latestscan}_scanstats', barcodetypelookuptable[f'{line[2]:02}'],1)
+				if not 'DOESNOTSCAN' in line[3]:
+					r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
+					r.hincrby(f'{latestscan}_scanstats', barcodetypelookuptable[line[2]],1)
 				#if the data on the line is larger than 20 flag it for review.
 				if( len(line[3]) > 20 ):
 					forReview.append(line[3])
@@ -153,7 +155,7 @@ def processCSV(file):
 	scannedlist = {}
 	scannedlist[latestscan] = {}
 	scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = countBarcodes(latestscan)
-	scannedlist[latestscan]['barcodes_by_type'] = r.hgetall(f'{latestscan}_scanstats')
+	scannedlist[latestscan]['stats4nerds'] = r.hgetall(f'{latestscan}_scanstats')
 	if( len(forReview) > 0 ):
 		scannedlist[latestscan]['_possible_scan_errors'] = forReview
 	#scannedlist[latestscan]['barcodes'] = r.hgetall(latestscan)
@@ -168,41 +170,40 @@ def importconfig(file):
 	return
 
 def main(file, outfile, **kwargs):
-        print('Called myscript with:')
-        for k, v in kwargs.items():
-                print('keyword argument: {} = {}'.format(k, v))
+	for k, v in kwargs.items():
+		print('keyword argument: {} = {}'.format(k, v))
 
-        global MYSQL_USER
-        global MYSQL_PASS
-        global MYSQL_IP
-        global MYSQL_PORT
+	global MYSQL_USER
+	global MYSQL_PASS
+	global MYSQL_IP
+	global MYSQL_PORT
 	global MYSQL_DB
-        global REDIS_IP
-        global REDIS_PORT
+	global REDIS_IP
+	global REDIS_PORT
 	global r
 
-        #import a config file
-        if 'configfile' in kwargs:
-                importconfig(kwargs['configfile'])
+	#import a config file
+	if 'configfile' in kwargs:
+		importconfig(kwargs['configfile'])
 
-        if 'MYSQL_USER' in kwargs:
-                MYSQL_USER = kwargs['MYSQL_USER']
-        if 'MYSQL_PASS' in kwargs:
-                MYSQL_PASS = kwargs['MYSQL_PASS']
-        if 'MYSQL_IP' in kwargs:
-                MYSQL_IP = kwargs['MYSQL_IP']
-        if 'MYSQL_PORT' in kwargs:
-                MYSQL_PORT = int(kwargs['MYSQL_PORT'])
-        if 'MYSQL_DB' in kwargs:
-                MYSQL_DB = kwargs['MYSQL_DB']
-        if 'REDIS_IP' in kwargs:
-                REDIS_IP = kwargs['REDIS_IP']
-        if 'REDIS_PORT' in kwargs:
+	if 'MYSQL_USER' in kwargs:
+		MYSQL_USER = kwargs['MYSQL_USER']
+	if 'MYSQL_PASS' in kwargs:
+		MYSQL_PASS = kwargs['MYSQL_PASS']
+	if 'MYSQL_IP' in kwargs:
+		MYSQL_IP = kwargs['MYSQL_IP']
+	if 'MYSQL_PORT' in kwargs:
+		MYSQL_PORT = int(kwargs['MYSQL_PORT'])
+	if 'MYSQL_DB' in kwargs:
+		MYSQL_DB = kwargs['MYSQL_DB']
+	if 'REDIS_IP' in kwargs:
+		REDIS_IP = kwargs['REDIS_IP']
+	if 'REDIS_PORT' in kwargs:
+		REDIS_PORT = kwargs['REDIS_PORT']
 
 	r = redis.StrictRedis(REDIS_IP, REDIS_PORT, charset='utf-8',decode_responses=True)
-                REDIS_PORT = int(kwargs['REDIS_PORT'])
 
 	processCSV(file, outfile)
 
 if __name__=='__main__':
-        main(sys.argv[1], sys.argv[2], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs
+	main(sys.argv[1], sys.argv[2], **dict(arg.split('=') for arg in sys.argv[3:])) # kwargs
