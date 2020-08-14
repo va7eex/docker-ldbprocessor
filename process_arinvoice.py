@@ -97,11 +97,11 @@ def addtopricechangelist( sku, price, databaseprice=None, databasedate=None, new
 			alert=''
 			if( (price - databaseprice)/ databaseprice > 0.1 ):
 				alert += '[pc>10%] '
-			if( price > (databaseprice + 5) ):
+			if( price >= (databaseprice + 5) ):
 				alert += '[pc$5+] '
-			elif( price > (databaseprice + 3) ):
+			elif( price >= (databaseprice + 3) ):
 				alert += '[pc$3+] '
-			elif( price > (databaseprice + 1) ):
+			elif( price >= (databaseprice + 1) ):
 				alert += '[pc$1+] '
 			fp.write(f'{alert}{sku:06}: {databaseprice} changed to {price} (last updated {databasedate})\n')
 		else:
