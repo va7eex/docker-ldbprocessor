@@ -121,9 +121,8 @@ def itmdb_pricechange( sku, price ):
 	if( cursor.rowcount != 0 ):
 		dbprice, dbdate = cursor.fetchone()
 		if( float(dbprice.strip()) != float(price) ):
-#			percent_diff = 0
-#			percent_diff = (price - float(dbprice.strip())) / float(dbprice.strip())
-			addtopricechangelist( sku, price, databaseprice=float(dbprice.strip()), databasedate=float(dbdate.strip()) )
+			dbprice = float(dbprice)
+			addtopricechangelist( sku, price, databaseprice=dbprice, databasedate=dbdate )
 			query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
 			cursor.execute(query)
 	else:
@@ -248,8 +247,8 @@ def processCSV(inputfile):
 			if( append ):
 				imparsabledollaramount = dollaramount.search(line)
 				if( imparsabledollaramount is not None ):
-					print( m.group() )
-					line.replace(m.group(), m.group().replace(',',''))
+					print( imparsabledollaramount.group() )
+					line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
 				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
 				line = re.sub( '( , |, | ,)', ',', line )
