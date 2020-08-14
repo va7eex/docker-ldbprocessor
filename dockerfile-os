@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 LABEL maintainer="David Rickett"
 
@@ -8,7 +8,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV MYSQL_IP=127.0.0.1
 ENV MYSQL_PORT=3306
 ENV MYSQL_USER=EXAMPLE
-ENV MYSQL_PASS=EXAMPLE
+ENV MYSQL_PASSWORD=EXAMPLE
 ENV MYSQL_DB=EXAMPLE
 ENV REDIS_IP=ldbredis
 ENV REDIS_PORT=6379
@@ -35,6 +35,7 @@ RUN date
 ADD ./monitor_file-for-os.sh /usr/share/monitor_filesystem.sh
 ADD ./process_ordersubmission.py /usr/share/
 
+VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
 
 ENTRYPOINT bash /usr/share/monitor_filesystem.sh
