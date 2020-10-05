@@ -34,10 +34,6 @@ REDIS_PORT=6783
 
 cnx=None
 
-ordernum='NaN'
-orderdate='NaN'
-ordershipdate='NaN'
-
 logtable=['orderlog']
 
 keys='SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY'
@@ -70,13 +66,19 @@ def getorderfromdatabase(ordernumber):
 	cursor.execute(query)
 
 	rows = cursor.fetchall()
-
+	order = {}
 	for row in rows:
 		sku, upc, qty = row
+		order[f'{sku}'] = {}
+		order[f'{sku}']['sku'] = sku
+		order[f'{sku}']['upc'] = upc
+		order[f'{sku}']['qty'] = qty
 #		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
-		print(f'{sku:06} ({upc}) x {qty}')
+		print(f"{order[{ordernumber}]['sku']:06} ({order[{ordernumber}]['upc']}) x {order[f'{ordernumber}']['qty']}")
 
 	cursor.close()
+
+	return order
 
 def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 	cursor = cnx.cursor(buffered=True)
@@ -104,9 +106,9 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 	cursor.close()
 
 def processCSV(file):
-	global ordernum
-	global orderdate
-	global ordershipdate
+	ordernum = 0
+	orderdate = 0
+	ordershipdate = 0
 	with open(file) as f:
 		for line in f:
 
@@ -189,6 +191,8 @@ def processCSV(file):
 	#with open('/tmp/Order_' + list['OrderNumber']+'.json', 'w') as fp:
 	#	json.dump(list,fp,indent=4,separators=(',', ': '),sort_keys=True)
 
+	return ordernum, orderdate, ordershipdate
+
 
 def mysql_setup():
 	global cnx
@@ -217,7 +221,7 @@ def mysql_setup():
 def importconfig(file):
 	return 0
 
-def main(file, **kwargs):
+def main(file, outdir, **kwargs):
 	print('Called myscript with:')
 	for k, v in kwargs.items():
 		print('keyword argument: {} = {}'.format(k, v))
@@ -250,10 +254,12 @@ def main(file, **kwargs):
 		REDIS_PORT = int(kwargs['REDIS_PORT'])
 
 	mysql_setup()
-	processCSV(file)
+	order = {}
+	order['ordernum'], order['orderdate'], order['ordershipdate'] = processCSV(file)
 
-	getorderfromdatabase(ordernum)
+	with open(f"{outdir}/order{order['ordernum'}.txt", 'w') as fp:
+		json.dump({**order, **getorderfromdatabase(ordernum)},fp,indent=4,separators=(',', ': '),sort_keys=True)
 	cnx.close()
 
 if __name__=='__main__':
-	main(sys.argv[1], **dict(arg.split('=') for arg in sys.argv[2:])) # kwargs
+	main(sys.argv[1], sys.argv[2], **dict(arg.split('=') for arg in sys.argv[3:])) # kwargs

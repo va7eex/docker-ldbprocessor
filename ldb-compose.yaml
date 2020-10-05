@@ -67,7 +67,7 @@ services:
       - MYSQL_PASSWORD=replacepwd
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-      - /home/bibwsstaff/googledrive/OrderSubmission:/var/ordersubmission
+      - /home/bibwsstaff/googledrive/OrderSubmission:/var/import
     restart: always
     depends_on:
       - ldbredis

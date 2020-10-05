@@ -98,12 +98,13 @@ def countBarcodes( scandate ):
 
 def processCSV(file, outfile):
 
-	latestscan=0
-	scangroup=0
-	previousline=None
-	previousgroup=scangroup
-	forReview=[]
-	scanuser=''
+	latestscan=0			#
+	scangroup=0			#
+	previousline=None		#
+	previousgroup=scangroup		#
+	forReview=[]			#anything that the program deems 'strange'
+	scanuser=''			#allow a user to mark that they were the ones scanning, probably never to be used
+	inventorytype='liquor'		#set the type of inventory scanned, by default this will be BC LDB Store 100
 
 	with open(file) as f:
 		for line in f:
@@ -118,6 +119,7 @@ def processCSV(file, outfile):
 				scangroup = 0
 				forReview=[]
 				scanuser=''
+				inventorytype='liquor'
 
 			#if theres some hideous scan error, you can start from the beginning or go back one
 			if( 'CLEARCLEARCLEAR' in line[3] ):
@@ -127,9 +129,12 @@ def processCSV(file, outfile):
 			elif( 'CLEARLASTCLEAR' in line[3] ):
 				if( previousline != None ):
 					r.hincrby(f'{latestscan}_{previousgroup}', previousline,-1)
-
-			elif( 'scanuser_' in line[3] ):
-				scanuser=line[3].replace('scanuser_','')
+			#allow other programs to act on type of scanned inventory
+			elif( 'inventorytype=' in line[3] ):
+				inventorytype = line[3].replace('inventorytype=','')
+			#assign initials to a specific scan group
+			elif( 'scanneruser=' in line[3] ):
+				scanuser=line[3].replace('scanneruser=','')
 
 			#breaks down the count by pallet
 			elif( 'scangroupincr' in line[3] ):
@@ -139,7 +144,7 @@ def processCSV(file, outfile):
 
 			else:
 				# increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
-				r.hincrby(f'{latestscan}_{scangroup}{scanuser}', line[3],1)
+				r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}', line[3],1)
 				#generate stats, I love stats.
 				if not 'DOESNOTSCAN' in line[3]:
 					r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
@@ -154,6 +159,7 @@ def processCSV(file, outfile):
 
 	scannedlist = {}
 	scannedlist[latestscan] = {}
+	scannedlist[latestscan]['receiving_type']=inventorytype
 	scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = countBarcodes(latestscan)
 	scannedlist[latestscan]['stats4nerds'] = r.hgetall(f'{latestscan}_scanstats')
 	if( len(forReview) > 0 ):
@@ -164,7 +170,7 @@ def processCSV(file, outfile):
 	#scannedlist[latestscan]['tally'] = sum( convertArrayToInts(r.hvals(latestscan)))
 
 	with open(outfile, 'w') as fp:
-	    json.dump(scannedlist,fp,indent=4,separators=(',', ': '),sort_keys=True)
+	    json.dump(scannedlist,fp,indent=2,separators=(',', ': '),sort_keys=True)
 
 def importconfig(file):
 	return
