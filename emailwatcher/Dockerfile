@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:latest
 
 LABEL maintainer="David Rickett"
 
@@ -13,20 +13,17 @@ ENV IMAP_ADDR=EXAMPLE \
 RUN apt update \
     && apt upgrade -y \
     && apt install -y python3 \
-	python3-email
-#	python3-mysqldb \
-	python3-simplejson \
-	python3-dateutil \
-	python3-mysql.connector \
-	python3-redis \
-	python3-pip \
+    python3-pip \
 
+RUN pip install -y schedule \
+    argparse
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
     && date
 
 ADD ./mail-attachments-archiver/ /usr/share/
 ADD ./mail-sync.py /usr/share/
+ADD ./config.json /usr/share/
 
 VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
