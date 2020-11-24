@@ -1,0 +1,35 @@
+{
+    "mappings": [
+        {
+            "filter_sender": true,
+            "senders": [
+                "bob@hisprovider.com"
+            ],
+            "filter_receiver": true,
+            "receivers": [ 
+                "you+data@yourprovider.com",
+                "you+reports@yourprovider.com"
+            ],
+            "subject": [ "DATA" ],
+            "add_date": true,
+            "destination": "/media/disk/data/"
+        },
+        {
+            "filter_sender": false,
+            "senders": [],
+            "filter_receiver": false,
+            "receivers": [],
+            "subject": [ "BACKUP" ],
+            "add_date": true,
+            "destination": "/media/disk/backup/"
+        }
+    ],
+    "use_gmail_trash_flag_with_delete": true,
+    "filter_unread_emails": false,
+    "mark_as_read": false,
+    "delete_email": true,
+    "mark_as_read_no_attachments": false,
+    "delete_email_no_attachments": false,
+    "mark_as_read_no_match": false,
+    "delete_email_no_match": false
+}

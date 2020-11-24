@@ -33,7 +33,7 @@ services:
       context: barcodeprocessor/
       dockerfile: Dockerfile
       args:
-        - TZ=America/Vancouver
+        - TZ=${TZ}
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
@@ -55,7 +55,7 @@ services:
       context: ordersubmission/
       dockerfile: Dockerfile
       args:
-        - TZ=America/Vancouver
+        - TZ=${TZ}
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
@@ -78,7 +78,7 @@ services:
       context: arinvoice/
       dockerfile: Dockerfile
       args:
-        - TZ=America/Vancouver
+        - TZ=${TZ}
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
@@ -94,5 +94,21 @@ services:
       - LDBdatabase
     networks:
       - ldbbackend
+  emailwatcher:
+    container_name: LDB_emailwatcher
+    build:
+      context: emailwatcher/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      IMAP_ADDR=EXAMPLE=${IMAP_ADDR}
+      IMAP_USER=EXAMPLE=${IMAP_USER}
+      IMAP_PASS=EXAMPLE=${IMAP_PASS}
+      IMAP_PORT=EXAMPLE=${IMAP_PORT}
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
 networks:
   ldbbackend:
