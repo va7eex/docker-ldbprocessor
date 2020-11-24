@@ -1,3 +1,0 @@
-[submodule "emailwatcher/mail-attachments-archiver"]
-	path = emailwatcher/mail-attachments-archiver
-	url = https://github.com/johnbenclark/mail-attachments-archiver
