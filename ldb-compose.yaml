@@ -7,13 +7,13 @@ services:
     image: linuxserver/mariadb:latest
     container_name: LDBdatabase
     environment:
-      - PUID=1000
-      - PGID=1000
-      - MYSQL_ROOT_PASSWORD=replacerootpwd
-      - TZ=America/Vancouver
-      - MYSQL_DATABASE=replacedb
-      - MYSQL_USER=replaceuser
-      - MYSQL_PASSWORD=replacepwd
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD
     restart: always
     networks:
       - ldbbackend
@@ -30,18 +30,17 @@ services:
   ldb_processor_bc:
     container_name: LDBprocessor_bc
     build:
-      context: ./
-      dockerfile: dockerfile-bc
+      context: barcodeprocessor/
+      dockerfile: Dockerfile
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
       - MYSQL_IP=replacesqlip
-      - MYSQL_PORT=replacesqlport
-      - MYSQL_DATABASE=replacedb
-      - MYSQL_USER=replaceuser
-      - MYSQL_PASSWORD=replacepwd
+      - MYSQL_DATABASE=${MYSQL_DATABASE
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
@@ -53,18 +52,17 @@ services:
   ldb_processor_os:
     container_name: LDBprocessor_os
     build:
-      context: ./
-      dockerfile: dockerfile-os
+      context: ordersubmission/
+      dockerfile: Dockerfile
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
       - MYSQL_IP=replacesqlip
-      - MYSQL_PORT=replacesqlport
-      - MYSQL_DATABASE=replacedb
-      - MYSQL_USER=replaceuser
-      - MYSQL_PASSWORD=replacepwd
+      - MYSQL_DATABASE=${MYSQL_DATABASE
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
       - /home/bibwsstaff/googledrive/OrderSubmission:/var/import
@@ -77,18 +75,17 @@ services:
   ldb_processor_ar:
     container_name: LDBprocessor_ar
     build:
-      context: ./
-      dockerfile: dockerfile-ar
+      context: arinvoice/
+      dockerfile: Dockerfile
       args:
         - TZ=America/Vancouver
     user: "1002:1002"
     environment:
       - REDIS_IP=ldbredis
       - MYSQL_IP=replacesqlip
-      - MYSQL_PORT=replacesqlport
-      - MYSQL_DATABASE=replacedb
-      - MYSQL_USER=replaceuser
-      - MYSQL_PASSWORD=replacepwd
+      - MYSQL_DATABASE=${MYSQL_DATABASE
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always

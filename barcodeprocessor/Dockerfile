@@ -8,7 +8,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV MYSQL_IP=127.0.0.1
 ENV MYSQL_PORT=3306
 ENV MYSQL_USER=EXAMPLE
-ENV MYSQL_PASS=EXAMPLE
+ENV MYSQL_PASSWORD=EXAMPLE
 ENV MYSQL_DB=EXAMPLE
 ENV REDIS_IP=ldbredis
 ENV REDIS_PORT=6379
@@ -16,18 +16,13 @@ ENV REDIS_PORT=6379
 RUN apt update
 RUN apt upgrade -y
 RUN apt install -y python3 \
-#	python3-mysqldb \
 	python3-simplejson \
 	python3-dateutil \
-	python3-mysql.connector \
 	python3-redis \
 	inotify-tools \
 	csvkit
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN date
-
-ADD ./monitor_ldbinvoice.sh /usr/share/monitor_filesystem.sh
+ADD ./monitor_file-for-bc.sh /usr/share/monitor_filesystem.sh
 ADD ./process_barcodes.py /usr/share/
 
 VOLUME ["/var/ldbinvoice"]

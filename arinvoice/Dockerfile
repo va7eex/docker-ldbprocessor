@@ -20,7 +20,7 @@ RUN apt install -y python3 \
 	python3-simplejson \
 	python3-dateutil \
 	python3-mysql.connector \
-        python3-redis \
+	python3-redis \
 	inotify-tools \
 	csvkit
 
