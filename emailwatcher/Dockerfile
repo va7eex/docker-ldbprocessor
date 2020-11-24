@@ -23,6 +23,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
 
 ADD ./mail-attachments-archiver/ /usr/share/
 ADD ./mail-sync.py /usr/share/
+ADD ./config.json /usr/share/
 
 VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
