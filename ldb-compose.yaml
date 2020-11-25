@@ -103,10 +103,10 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      IMAP_ADDR=EXAMPLE=${IMAP_ADDR}
-      IMAP_USER=EXAMPLE=${IMAP_USER}
-      IMAP_PASS=EXAMPLE=${IMAP_PASS}
-      IMAP_PORT=EXAMPLE=${IMAP_PORT}
+      - IMAP_ADDR=EXAMPLE=${IMAP_ADDR}
+      - IMAP_USER=EXAMPLE=${IMAP_USER}
+      - IMAP_PASS=EXAMPLE=${IMAP_PASS}
+      - IMAP_PORT=EXAMPLE=${IMAP_PORT}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
