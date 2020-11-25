@@ -5,7 +5,7 @@ import time
 import schedule
 import json
 
-from mail-attachments-archiver import mail-attachments-archiver as maa
+from mailattachmentsarchiver import mailattachmentsarchiver as maa
 
 def generateIMAP(file,addr,port,user,pwd):
     credentials = {}
