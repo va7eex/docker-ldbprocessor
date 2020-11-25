@@ -22,8 +22,9 @@ def getmail(maa):
 
 def main(maa):
     #every day at noon, check for mail.
-    schedule.every().day.at("12:00").do(getmail,maa)
-    
+    schedule.every(4).hours.do(getmail,maa)
+
+    print("Mail scheduler started")
     while True:
         schedule.run_pending()
         time.sleep(60)
