@@ -16,17 +16,22 @@ def generateIMAP(file,addr,port,user,pwd):
     with open(file, 'w') as fp:
 	    json.dump(credentials,fp,indent=2,separators=(',', ': '),sort_keys=True)
 
+def getmail(maa):
+    print("Getting mail")
+    maa.get_mail()
+
 def main(maa):
     #every day at noon, check for mail.
-    schedule.every().day.at("12:00").do(maa.get_mail())
-    
+    schedule.every(4).hours.do(getmail,maa)
+
+    print("Mail scheduler started")
     while True:
         schedule.run_pending()
         time.sleep(60)
 
 if __name__ == '__main__':
     #generate IMAP from docker .env
-    generateIMAP('/usr/share/imap.json',os.getenv('IMAP_ADDR'),os.getenv('IMAP_USER'),os.getenv('IMAP_PASS'))
+    generateIMAP('/tmp/imap.json',os.getenv('IMAP_ADDR'),os.getenv('IMAP_USER'),os.getenv('IMAP_PASS'))
 
-    maa = maa('/usr/share/imap.json','/usr/share/config.json')
+    maa = maa('/tmp/imap.json','/usr/share/config.json')
     main(maa)
