@@ -42,9 +42,8 @@ itemlist = []
 itemlistnonstock = []
 itemlist3rdparty = []
 itemlist3rdpartynonstock = []
-append=0
 
-orderline = re.compile('Order #:, ?\d{4,}$')
+orderline = re.compile('Order , ?\d{4,}$')
 orderdateline = re.compile('Order Booking Date *, *\d{8},$')
 ordershipdateline = re.compile('Expected Ship Date *, *\d{8},$')
 
@@ -74,7 +73,7 @@ def getorderfromdatabase(ordernumber):
 		order[f'{sku}']['upc'] = upc
 		order[f'{sku}']['qty'] = qty
 #		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
-		print(f"{order[{ordernumber}]['sku']:06} ({order[{ordernumber}]['upc']}) x {order[f'{ordernumber}']['qty']}")
+		print('%s, %s x %s'%(order[ordernumber]['sku'],order[ordernumber]['upc'],order[ordernumber]['qty']))
 
 	cursor.close()
 
@@ -109,6 +108,7 @@ def processCSV(file):
 	ordernum = 0
 	orderdate = 0
 	ordershipdate = 0
+	append = 0
 	with open(file) as f:
 		for line in f:
 
@@ -126,6 +126,8 @@ def processCSV(file):
 
 	#		if( append == 0 ):
 	#			print( line )
+
+			print(line)
 
 			#regex find the order number, date, and expected ship date
 			ols = orderline.search(line)
@@ -222,9 +224,9 @@ def importconfig(file):
 	return 0
 
 def main(file, outdir, **kwargs):
-	print('Called myscript with:')
-	for k, v in kwargs.items():
-		print('keyword argument: {} = {}'.format(k, v))
+	print('LDB OSR Processor started.')
+#	for k, v in kwargs.items():
+#		print('keyword argument: {} = {}'.format(k, v))
 
 	global MYSQL_USER
 	global MYSQL_PASS
@@ -257,8 +259,8 @@ def main(file, outdir, **kwargs):
 	order = {}
 	order['ordernum'], order['orderdate'], order['ordershipdate'] = processCSV(file)
 
-	with open(f"{outdir}/order{order['ordernum'}.txt", 'w') as fp:
-		json.dump({**order, **getorderfromdatabase(ordernum)},fp,indent=4,separators=(',', ': '),sort_keys=True)
+	with open('%s/order-%s.txt'%(outdir, order['ordernum']), 'w') as fp:
+		json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=4,separators=(',', ': '),sort_keys=True)
 	cnx.close()
 
 if __name__=='__main__':

@@ -3,9 +3,9 @@ services:
 
   #database
 
-  LDBdatabase:
+  ldb_database:
     image: linuxserver/mariadb:latest
-    container_name: LDBdatabase
+    container_name: ldb_database
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -17,10 +17,11 @@ services:
     restart: always
     networks:
       - ldbbackend
-
-  ldbredis:
+    volumes:
+      - /mnt/ldbdatabase:/config
+  ldb_redis:
     image: redis:alpine
-    container_name: ldbredis
+    container_name: ldb_redis
     restart: always
     networks:
       - ldbbackend
@@ -28,7 +29,7 @@ services:
   #apps, will build to order
 
   ldb_processor_bc:
-    container_name: LDBprocessor_bc
+    container_name: ldb_processor_bc
     build:
       context: barcodeprocessor/
       dockerfile: Dockerfile
@@ -36,8 +37,8 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldbredis
-      - MYSQL_IP=replacesqlip
+      - REDIS_IP=ldb_redis
+      - MYSQL_IP=ldb_Database
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -45,12 +46,12 @@ services:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
-      - ldbredis
-      - LDBdatabase
+      - ldb_redis
+      - ldb_database
     networks:
       - ldbbackend
   ldb_processor_os:
-    container_name: LDBprocessor_os
+    container_name: ldb_processor_os
     build:
       context: ordersubmission/
       dockerfile: Dockerfile
@@ -58,22 +59,21 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldbredis
-      - MYSQL_IP=replacesqlip
+      - REDIS_IP=ldb_redis
+      - MYSQL_IP=ldb_Database
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-      - /home/bibwsstaff/googledrive/OrderSubmission:/var/import
     restart: always
     depends_on:
-      - ldbredis
-      - LDBdatabase
+      - ldb_redis
+      - ldb_database
     networks:
       - ldbbackend
   ldb_processor_ar:
-    container_name: LDBprocessor_ar
+    container_name: ldb_processor_ar
     build:
       context: arinvoice/
       dockerfile: Dockerfile
@@ -81,8 +81,8 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldbredis
-      - MYSQL_IP=replacesqlip
+      - REDIS_IP=ldb_redis
+      - MYSQL_IP=ldb_Database
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -90,12 +90,12 @@ services:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
-      - ldbredis
-      - LDBdatabase
+      - ldb_redis
+      - ldb_database
     networks:
       - ldbbackend
-  emailwatcher:
-    container_name: LDB_emailwatcher
+  ldb_emailwatcher:
+    container_name: ldb_emailwatcher
     build:
       context: emailwatcher/
       dockerfile: Dockerfile
@@ -103,12 +103,15 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - IMAP_ADDR=EXAMPLE=${IMAP_ADDR}
-      - IMAP_USER=EXAMPLE=${IMAP_USER}
-      - IMAP_PASS=EXAMPLE=${IMAP_PASS}
-      - IMAP_PORT=EXAMPLE=${IMAP_PORT}
+      - IMAP_ADDR=${IMAP_ADDR}
+      - IMAP_USER=${IMAP_USER}
+      - IMAP_PASS=${IMAP_PASS}
+      - IMAP_PORT=${IMAP_PORT}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
+    depends_on:
+      - ldb_processor_ar
+      - ldb_processor_os
 networks:
   ldbbackend:

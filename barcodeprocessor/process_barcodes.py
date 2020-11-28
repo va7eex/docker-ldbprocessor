@@ -88,20 +88,23 @@ def countBarcodes( scandate ):
     return barcodes, tally, total
     
 def lookupUPC(barcodes):
-    cursor = cnx.cursor(buffered=True)
-    parsedbarcodes = {}
-    for bc, qty in barcodes.items():
-        query = f'SELECT sku, productdescription FROM orderlog WHERE upc={bc}'
-        cursor.execute(query)
+    return barcodes
+#    cursor = cnx.cursor(buffered=True)
+#    parsedbarcodes = {}
+#    for bc, qty in barcodes.items():
+#        if not 'DOESNOTSCAN' in bc:
+#            query = f'SELECT sku, productdescription FROM orderlog WHERE upc={bc}'
+#            cursor.execute(query)
 
-        if( cursor.rowcount != 0 ):
-            sku, description = cursor.fetchone()
-            parsedbarcodes.put(f'{sku},{description}',qty)
-        else:
-            #if not found in db, put in the UPC.
-            parsedbarcodes.put(bc,qty)
-            
-    return parsedbarcodes
+#            if( cursor.rowcount != 0 ):
+#                sku, description = cursor.fetchone()
+#                parsedbarcodes[f'{sku},{description}'] = qty
+#            else:
+#                #if not found in db, put in the UPC.
+#                parsedbarcodes[bc] = qty
+#        else:
+#            parsedbarcodes[bc] = qty
+#    return parsedbarcodes
 
 def processCSV(file, outfile):
 
@@ -135,7 +138,7 @@ def processCSV(file, outfile):
             #note: theres a button on the Motorola CS3000 that does exactly this, but better
             elif( 'CLEARLASTCLEAR' in line[3] ):
                 if( previousline != None ):
-                    r.hincrby(f'{latestscan}_{previousgroup}', previousline,-1)
+                    r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}',previousline,-1)
             #allow other programs to act on type of scanned inventory
             elif( 'inventorytype=' in line[3] ):
                 inventorytype = line[3].replace('inventorytype=','')

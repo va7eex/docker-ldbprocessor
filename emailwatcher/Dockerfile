@@ -5,10 +5,10 @@ LABEL maintainer="David Rickett"
 ARG TZ=America/Vancouver
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV IMAP_ADDR=EXAMPLE \
-    IMAP_USER=EXAMPLE \
-    IMAP_PASS=EXAMPLE \
-    IMAP_PORT=EXAMPLE
+ENV IMAP_ADDR=EXAMPLE
+ENV IMAP_USER=EXAMPLE
+ENV IMAP_PASS=EXAMPLE
+ENV IMAP_PORT=EXAMPLE
 
 RUN apt update \
     && apt upgrade -y \
@@ -27,9 +27,8 @@ COPY mail-attachments-archiver /usr/share/
 COPY sync-mail.py /usr/share/
 COPY config.json /usr/share/
 
-RUN ls -l /usr/share
-
 VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
 
-ENTRYPOINT python3 /usr/share/sync-mail.py
+#sleep initially so the rest of the containers can set themselves up.
+ENTRYPOINT sleep 60s && python3 -u /usr/share/sync-mail.py

@@ -36,6 +36,7 @@ PB_FILE='processedbarcodes.json'
 
 cnx = None
 
+dollaramount = re.compile('\$\d+,\d{3}')
 
 orderdate='nodatefound'
 
@@ -75,12 +76,12 @@ def mysql_setup():
 		size VARCHAR(20),
 		qty SMALLINT UNSIGNED,
 		uom VARCHAR(20),
-		priceperuom FLOAT(7,4),
-		extendedprice FLOAT(7,4),
+		priceperuom FLOAT(11,4),
+		extendedprice FLOAT(11,4),
 		suquantity SMALLINT UNSIGNED,
-		suprice FLOAT(7,4),
-		wppsavings FLOAT(7,4),
-		contdeposit FLOAT(7,4),
+		suprice FLOAT(11,4),
+		wppsavings FLOAT(11,4),
+		contdeposit FLOAT(11,4),
 		originalorder INT(10),
 		invoicedate VARCHAR(20),
 		PRIMARY KEY (id))''')
@@ -223,7 +224,6 @@ def printpricechangelist( date ):
 
 	cursor.close()
 
-dollaramount = re.compile('\$\d+,\d{3}')
 
 def processCSV(inputfile):
 	#this is what an empty line looks like
@@ -247,8 +247,9 @@ def processCSV(inputfile):
 			if( append ):
 				imparsabledollaramount = dollaramount.search(line)
 				if( imparsabledollaramount is not None ):
-					print( imparsabledollaramount.group() )
-					line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
+					print( '!!! WARNING: comma in dollar amount !!! %s'%imparsabledollaramount.group() )
+					line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
+
 
 				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
 				line = re.sub( '( , |, | ,)', ',', line )

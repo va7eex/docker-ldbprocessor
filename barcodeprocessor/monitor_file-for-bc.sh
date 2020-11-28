@@ -14,7 +14,7 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
     while read path action file; do
         echo "The file '$file' appeared in directory '$path' via '$action'"
 	if [[ $file =~ barcodes\.csv ]]; then
-		python3 /usr/share/process_barcodes_redis.py $path$file \
+		python3 /usr/share/process_barcodes.py $path$file \
 			$path$(date +%Y-%h-%d)"_scanlog.txt" \
 			MYSQL_IP=$MYSQL_IP \
                         MYSQL_PORT=$MYSQL_PORT \
