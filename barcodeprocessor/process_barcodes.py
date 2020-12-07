@@ -81,7 +81,7 @@ def lookupUPC(barcodes):
     parsedbarcodes = {}
     for bc, qty in barcodes.items():
         if not 'DOESNOTSCAN' in bc:
-            query = f'SELECT sku, productdescription FROM orderlog WHERE upc LIKE %{bc}%'
+            query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP %{bc}%'
             cursor.execute(query)
             print(query)
             print(cursor.rowcount)
