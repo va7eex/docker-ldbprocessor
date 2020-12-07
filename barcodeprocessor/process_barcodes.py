@@ -74,6 +74,25 @@ def deleteRedisDB( scandate ):
         count += 1
     pipe.execute()
     return count
+    
+def lookupUPC(barcodes):
+    return barcodes
+    cursor = cnx.cursor(buffered=True)
+    parsedbarcodes = {}
+    for bc, qty in barcodes.items():
+        if not 'DOESNOTSCAN' in bc:
+            query = f'SELECT sku, productdescription FROM orderlog WHERE upc LIKE {bc}'
+            cursor.execute(query)
+
+            if( cursor.rowcount != 0 ):
+                sku, description = cursor.fetchone()
+                parsedbarcodes[f'{sku:06},{description}'] = qty
+            else:
+                #if not found in db, put in the UPC.
+                parsedbarcodes[bc] = qty
+        else:
+            parsedbarcodes[bc] = qty
+    return parsedbarcodes
 
 def countBarcodes( scandate ):
     barcodes = {}
@@ -86,25 +105,6 @@ def countBarcodes( scandate ):
             tally[key] = sumRedisValues(r.hvals(key))
             total += tally[key]
     return barcodes, tally, total
-    
-def lookupUPC(barcodes):
-    return barcodes
-#    cursor = cnx.cursor(buffered=True)
-#    parsedbarcodes = {}
-#    for bc, qty in barcodes.items():
-#        if not 'DOESNOTSCAN' in bc:
-#            query = f'SELECT sku, productdescription FROM orderlog WHERE upc={bc}'
-#            cursor.execute(query)
-
-#            if( cursor.rowcount != 0 ):
-#                sku, description = cursor.fetchone()
-#                parsedbarcodes[f'{sku},{description}'] = qty
-#            else:
-#                #if not found in db, put in the UPC.
-#                parsedbarcodes[bc] = qty
-#        else:
-#            parsedbarcodes[bc] = qty
-#    return parsedbarcodes
 
 def processCSV(file, outfile):
 
