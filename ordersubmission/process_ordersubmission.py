@@ -77,12 +77,13 @@ def getorderfromdatabase(ordernumber):
 	order[ordernumber] = {}
 	for row in rows:
 		sku, upc, qty, productdescription = row
-		order[f'{sku:06}']['sku'] = f'{sku:06}'
-		order[f'{sku:06}']['upc'] = upc
-		order[f'{sku:06}']['qty'] = qty
-		order[f'{sku:06}']['productdescription'] = productdescription
+		order[ordernumber][f'{sku:06}'] = {}
+		order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
+		order[ordernumber][f'{sku:06}']['upc'] = upc
+		order[ordernumber][f'{sku:06}']['qty'] = qty
+		order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
 #		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
-		print('%s, %s x %s'%(order[f'{sku:06}']['sku'],order[f'{sku:06}']['upc'],order[f'{sku:06}']['qty']))
+		print('%s, %s x %s'%(order[ordernumber][f'{sku:06}']['sku'],order[ordernumber][f'{sku:06}']['upc'],order[ordernumber][f'{sku:06}']['qty']))
 
 	cursor.close()
 
