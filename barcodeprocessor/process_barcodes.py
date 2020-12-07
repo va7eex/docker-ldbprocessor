@@ -76,7 +76,7 @@ def deleteRedisDB( scandate ):
     return count
     
 def lookupUPC(barcodes):
-    return barcodes
+#    return barcodes
     cursor = cnx.cursor(buffered=True)
     parsedbarcodes = {}
     for bc, qty in barcodes.items():
