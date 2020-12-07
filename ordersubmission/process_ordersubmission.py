@@ -76,7 +76,7 @@ def getorderfromdatabase(ordernumber):
 	order = {}
 	order[ordernumber] = {}
 	for row in rows:
-		sku, upc, qty = row
+		sku, upc, qty, productdescription = row
 		order[ordernumber]['sku'] = sku
 		order[ordernumber]['upc'] = upc
 		order[ordernumber]['qty'] = qty
