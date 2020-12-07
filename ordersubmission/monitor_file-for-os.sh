@@ -19,7 +19,7 @@ inotifywait -m $IMPORTPATH -m $FILEPATH -e close_write -e moved_to |
 		html2csv $path$file -o /tmp/"${file%.*}.csv"
 		echo 'processing OSRPDF'
 #		cp /tmp/"${file%.*}.csv" /var/ldbinvoice/"${file%.*}.csv"
-		python3 /usr/share/process_ordersubmission.py \
+		python3 -u /usr/share/process_ordersubmission.py \
 			/tmp/"${file%.*}.csv" \
 			/var/ldbinvoice \
 			MYSQL_IP=$MYSQL_IP \

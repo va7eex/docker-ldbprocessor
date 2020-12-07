@@ -44,14 +44,22 @@ itemlist3rdparty = []
 itemlist3rdpartynonstock = []
 
 orderline = re.compile('Order , ?\d{4,}$')
-orderdateline = re.compile('Order Booking Date *, *\d{8},$')
-ordershipdateline = re.compile('Expected Ship Date *, *\d{8},$')
+orderdateline = re.compile('Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
+ordershipdateline = re.compile('Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
 
 dollarvalue = re.compile('\$\d+,\d{3}')
 
 itemlistline = re.compile('^\d{8}')
 
 itemlineok = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
+
+def converttimedatetonum(time):
+
+	# %d%b%y = 02DEC20
+
+	time = datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y%m%d')
+
+	return time
 
 def getorderfromdatabase(ordernumber):
 
@@ -61,17 +69,18 @@ def getorderfromdatabase(ordernumber):
 	cursor = cnx.cursor(buffered=True)
 
 #	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
-	query = f'SELECT sku, upc, qty FROM orderlog WHERE ordernumber={ordernumber}'
+	query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
 	cursor.execute(query)
 
 	rows = cursor.fetchall()
 	order = {}
+	order[ordernumber] = {}
 	for row in rows:
 		sku, upc, qty = row
-		order[f'{sku}'] = {}
-		order[f'{sku}']['sku'] = sku
-		order[f'{sku}']['upc'] = upc
-		order[f'{sku}']['qty'] = qty
+		order[ordernumber]['sku'] = sku
+		order[ordernumber]['upc'] = upc
+		order[ordernumber]['qty'] = qty
+		order[ordernumber]['productdescription'] = productdescription
 #		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
 		print('%s, %s x %s'%(order[ordernumber]['sku'],order[ordernumber]['upc'],order[ordernumber]['qty']))
 
@@ -80,11 +89,14 @@ def getorderfromdatabase(ordernumber):
 	return order
 
 def insertintodatabase(line, table, ordnum, orddate, thirdparty):
+	if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
+		return
+
 	cursor = cnx.cursor(buffered=True)
 
 	if( itemlineok.match(line) is None ):
 		print( f'Line failed validation:\n\t{line}' )
-		return;
+		return
 
 	linesplit = line.split(',')
 
@@ -99,7 +111,7 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 		ordernumber, orderdate, sku, upc, productdescription, sellingunitsize, uom, qty, thirdparty ) VALUES ( {ordnum}, {orddate}, {sku}, {upc}, '{productdescription}', '{sellingunitsize}', '{uom}', '{qty}', {thirdparty} )
 		'''
 
-#	print(query)
+	print(query)
 	cursor.execute(query)
 	cnx.commit()
 	cursor.close()
@@ -118,7 +130,7 @@ def processCSV(file):
 	#		m = p.match(line)
 			if( dollarvalue.match(line) is not None ):
 				print( dollarvalue.group() )
-				line.replace(m.group(), m.group().replace(',',''))
+				line = line.replace(m.group(), m.group().replace(',',''))
 
 			#strip all non-alphanumeric characters and whitespace greater than 2
 
@@ -138,50 +150,57 @@ def processCSV(file):
 			odls = orderdateline.search(line)
 			if( odls is not None ):
 				print(line)
-				orderdate = odls.group(0).split(',')[1].strip()
+				orderdate = converttimedatetonum(odls.group(0).split(',')[1].strip())
 				print(orderdate)
 			osdls = ordershipdateline.search(line)
 			if( osdls is not None ):
 				print(line)
-				ordershipdate = osdls.group(0).split(',')[1].strip()
+				ordershipdate = converttimedatetonum(osdls.group(0).split(',')[1].strip())
 				print(ordershipdate)
 
 			#find and fill table
 
 			if( line.find('LDB Stocked Product Expected for Delivery') > -1):
 				append=1
+				print('Append = 1')
 			elif( line.find('LDB Stocked Product Currently Unavailable') > -1):
 				append=2
+				print('Append = 2')
 			elif( line.find('Third Party Warehouse Stocked Product on Order') > -1):
 				append=4
+				print('Append = 4')
 			elif( line.find('Third Party Warehouse Stocked Product Currently Unavailable') > -1):
 				append=8
+				print('Append = 8')
 
 			if( append > 0 ):
 				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
 				line = re.sub( '( , |, | ,)', ',', line)
 				line = re.sub( '(,,|, ,)', ',0.00,', line )
 
-			if( append == 1 ):
-				if( itemlistline.match(line) is not None ):
-					insertintodatabase(line,0,ordernum,orderdate,False)
-	#				itemlist.append(line)
-	#				print( line )
-	#		elif( append == 2 ):
-	#			if( itemlistline.match(line) is not None ):
-	#				insertintodatabase(line,0,ordernum,orderdate)
-	#				itemlistnonstock.append(line)
-	#				print( line )
-			elif( append == 4 ):
-				if( itemlistline.match(line) is not None ):
-					insertintodatabase(line,0,ordernum,orderdate,True)
-	#				itemlist3rdparty.append(line)
-	#				print( line )
-	#		elif( append == 8 ):
-	#			if( itemlistline.match(line) is not None ):
-	#				insertintodatabase(line,0,ordernum,orderdate)
-	#				itemlist3rdpartynonstock.append(line)
-	#				print( line )
+				if 'Subtotal' in line:
+					append = 0
+
+				if( append == 1 ):
+					if( itemlistline.match(line) is not None ):
+						insertintodatabase(line,0,ordernum,orderdate,False)
+	#					itemlist.append(line)
+	#					print( line )
+	#			elif( append == 2 ):
+	#				if( itemlistline.match(line) is not None ):
+	#					insertintodatabase(line,0,ordernum,orderdate)
+	#					itemlistnonstock.append(line)
+	#					print( line )
+				elif( append == 4 ):
+					if( itemlistline.match(line) is not None ):
+						insertintodatabase(line,0,ordernum,orderdate,True)
+	#					itemlist3rdparty.append(line)
+	#					print( line )
+	#			elif( append == 8 ):
+	#				if( itemlistline.match(line) is not None ):
+	#					insertintodatabase(line,0,ordernum,orderdate)
+	#					itemlist3rdpartynonstock.append(line)
+	#					print( line )
 
 	#for item in itemlist:
 	#	print( item )

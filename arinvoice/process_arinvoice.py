@@ -199,10 +199,14 @@ def addlineitem( line, orderdate ):
 
 
 def printinvoicetofile( date ):
+	print(f'Printing invoice {date} to file')
+
 	cursor = cnx.cursor(buffered=True)
-	cursor.execute(("SELECT DISTINCT sku, suprice, suquantity, productdescription, originalorder FROM invoicelog WHERE invoicedate='%s'")%(date))
+	cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, originalorder FROM invoicelog WHERE invoicedate='{date}'")
 
 	rows = cursor.fetchall()
+
+	print('Total Rows: %s'%len(rows))
 
 	with open(outfile, 'a') as fp:
 		for row in rows:
