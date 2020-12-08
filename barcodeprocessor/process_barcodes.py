@@ -81,7 +81,7 @@ def lookupUPC(barcodes):
     cursor = cnx.cursor(buffered=True)
     parsedbarcodes = {}
     for bc, qty in barcodes.items():
-        if not 'DOESNOTSCAN' in bc:
+        if bc.isdigit():
             query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {bc}'
             cursor.execute(query)
             print(query)
