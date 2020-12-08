@@ -77,16 +77,15 @@ def deleteRedisDB( scandate ):
     return count
     
 def lookupUPC(barcodes):
-#    return barcodes
     cursor = cnx.cursor(buffered=True)
     parsedbarcodes = {}
     for bc, qty in barcodes.items():
+        # only perform queries on numbers only.
         if bc.isdigit():
+            # check the orderlog for data if the UPC exists
             query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {bc}'
             cursor.execute(query)
-            print(query)
-            print(cursor.rowcount)
-
+            # if there is a result substitute sku, and product name where barcode is.
             if( cursor.rowcount != 0 ):
                 sku, description = cursor.fetchone()
                 parsedbarcodes[f'{sku:06},{description}'] = qty
@@ -112,12 +111,12 @@ def countBarcodes( scandate ):
 def processCSV(file, outfile):
 
     latestscan=0            #
-    scangroup=0            #
-    previousline=None        #
-    previousgroup=scangroup        #
+    scangroup=0             #
+    previousline=None       #
+    previousgroup=scangroup #
     forReview=[]            #anything that the program deems 'strange'
-    scanuser=''            #allow a user to mark that they were the ones scanning, probably never to be used
-    inventorytype='liquor'        #set the type of inventory scanned, by default this will be BC LDB Store 100
+    scanuser=''             #allow a user to mark that they were the ones scanning, probably never to be used
+    inventorytype='liquor'  #set the type of inventory scanned, by default this will be BC LDB Store 100
 
     with open(file) as f:
         for line in f:
@@ -190,8 +189,6 @@ def importconfig(file):
     return
 
 def main(file, outfile, **kwargs):
-    for k, v in kwargs.items():
-        print('keyword argument: {} = {}'.format(k, v))
 
     global REDIS_IP
     global REDIS_PORT

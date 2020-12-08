@@ -18,10 +18,6 @@ def generateIMAP(file,addr,port,user,pwd):
     with open(file, 'w') as fp:
 	    json.dump(credentials,fp,indent=2,separators=(',', ': '),sort_keys=True)
 
-def getmail(maa):
-    print("Checking Mail")
-    maa.get_mail()
-
 def main(maa, hours):
     #if we don't define it, its an hour interval
     if hours is None or hours == '' or not hours.isDigit(): hours = 1

@@ -292,10 +292,6 @@ def main(file_input, file_output, file_pricereport, **kwargs):
 	outfile=file_output
 	pricereport=file_pricereport
 
-	print('Called myscript with:')
-	for k, v in kwargs.items():
-		print('keyword argument: {} = {}'.format(k, v))
-
 	#import a config file
 	if 'configfile' in kwargs:
 		importconfig(kwargs['configfile'])

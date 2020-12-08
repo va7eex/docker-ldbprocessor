@@ -125,10 +125,7 @@ def processCSV(file):
 	with open(file) as f:
 		for line in f:
 
-		#check if any dollar values exceed $999
-
-	#		p = re.compile('\$\d+,\d{3}')
-	#		m = p.match(line)
+			#check if any dollar values exceed $999, if it does remove errant commas.
 			if( dollarvalue.match(line) is not None ):
 				print( dollarvalue.group() )
 				line = line.replace(m.group(), m.group().replace(',',''))
@@ -136,11 +133,6 @@ def processCSV(file):
 			#strip all non-alphanumeric characters and whitespace greater than 2
 
 			line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line).strip()
-
-	#		if( append == 0 ):
-	#			print( line )
-
-			print(line)
 
 			#regex find the order number, date, and expected ship date
 			ols = orderline.search(line)
@@ -159,15 +151,17 @@ def processCSV(file):
 				ordershipdate = converttimedatetonum(osdls.group(0).split(',')[1].strip())
 				print(ordershipdate)
 
-			#find and fill table
+			# each of these headers indicates the start of a new table.
 
 			if( line.find('LDB Stocked Product Expected for Delivery') > -1):
+				#we care about this one
 				append=1
 				print('Append = 1')
 			elif( line.find('LDB Stocked Product Currently Unavailable') > -1):
 				append=2
 				print('Append = 2')
 			elif( line.find('Third Party Warehouse Stocked Product on Order') > -1):
+				#we care about this one
 				append=4
 				print('Append = 4')
 			elif( line.find('Third Party Warehouse Stocked Product Currently Unavailable') > -1):
@@ -175,43 +169,21 @@ def processCSV(file):
 				print('Append = 8')
 
 			if( append > 0 ):
+				#remove non-standard characters, whitespace between commas, and if multiple commas exist back to back replace with 0.
 				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
 				line = re.sub( '( , |, | ,)', ',', line)
 				line = re.sub( '(,,|, ,)', ',0.00,', line )
 
+				# subtotal denotes the end of a table.
 				if 'Subtotal' in line:
 					append = 0
 
 				if( append == 1 ):
 					if( itemlistline.match(line) is not None ):
 						insertintodatabase(line,0,ordernum,orderdate,False)
-	#					itemlist.append(line)
-	#					print( line )
-	#			elif( append == 2 ):
-	#				if( itemlistline.match(line) is not None ):
-	#					insertintodatabase(line,0,ordernum,orderdate)
-	#					itemlistnonstock.append(line)
-	#					print( line )
 				elif( append == 4 ):
 					if( itemlistline.match(line) is not None ):
 						insertintodatabase(line,0,ordernum,orderdate,True)
-	#					itemlist3rdparty.append(line)
-	#					print( line )
-	#			elif( append == 8 ):
-	#				if( itemlistline.match(line) is not None ):
-	#					insertintodatabase(line,0,ordernum,orderdate)
-	#					itemlist3rdpartynonstock.append(line)
-	#					print( line )
-
-	#for item in itemlist:
-	#	print( item )
-	#for item in itemlist2wk:
-	#	print( item )
-
-	#print( list )
-
-	#with open('/tmp/Order_' + list['OrderNumber']+'.json', 'w') as fp:
-	#	json.dump(list,fp,indent=4,separators=(',', ': '),sort_keys=True)
 
 	return ordernum, orderdate, ordershipdate
 
@@ -280,7 +252,7 @@ def main(file, outdir, **kwargs):
 	order['ordernum'], order['orderdate'], order['ordershipdate'] = processCSV(file)
 
 	with open('%s/order-%s.txt'%(outdir, order['ordernum']), 'w') as fp:
-		json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=4,separators=(',', ': '),sort_keys=True)
+		json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_keys=True)
 	cnx.close()
 
 if __name__=='__main__':
