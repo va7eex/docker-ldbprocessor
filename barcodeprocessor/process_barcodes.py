@@ -121,6 +121,7 @@ def processCSV(file, outfile):
     with open(file) as f:
         for line in f:
             line = line.replace('\n','').split(',')
+            line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
             datescanned = datetime.datetime.strptime(line[0], '%d/%m/%Y').strftime('%Y%m%d')
     #        print( datescanned )
             if( int(datescanned) > latestscan ):
