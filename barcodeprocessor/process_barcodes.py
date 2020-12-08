@@ -18,6 +18,7 @@ import json
 import codecs
 import datetime
 import redis
+import re
 from mysql.connector import (connection)
 
 scannedlist = {}
