@@ -18,9 +18,13 @@ def generateIMAP(file,addr,port,user,pwd):
     with open(file, 'w') as fp:
 	    json.dump(credentials,fp,indent=2,separators=(',', ': '),sort_keys=True)
 
+#this is for scheduling
+def getmail(maa):
+    maa.get_mail()
+
 def main(maa, hours):
     #if we don't define it, its an hour interval
-    if hours is None or hours == '' or not hours.isDigit(): hours = 1
+    if hours is None or hours == '' or not hours.isdigit(): hours = 1
 
     print('Script started, initial mail check commencing')
     maa.get_mail()
