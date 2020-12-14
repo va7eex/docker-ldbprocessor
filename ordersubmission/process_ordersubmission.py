@@ -99,17 +99,10 @@ def insertintodatabase(line, table, ordnum, orddate, thirdparty):
 		print( f'Line failed validation:\n\t{line}' )
 		return
 
-	linesplit = line.split(',')
-
-	sku = linesplit[0].strip()
-	upc = linesplit[1].strip()
-	productdescription = linesplit[2].strip()
-	sellingunitsize = linesplit[3].strip()
-	uom = linesplit[4].strip()
-	qty = linesplit[5].strip()
+	li = lineitem(*line.split(','))
 
 	query = f'''INSERT INTO orderlog (
-		ordernumber, orderdate, sku, upc, productdescription, sellingunitsize, uom, qty, thirdparty ) VALUES ( {ordnum}, {orddate}, {sku}, {upc}, '{productdescription}', '{sellingunitsize}', '{uom}', '{qty}', {thirdparty} )
+		ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
 		'''
 
 	print(query)
