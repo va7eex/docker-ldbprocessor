@@ -23,6 +23,8 @@ from datetime import date
 #import mysqlclient
 from mysql.connector import (connection)
 
+from lineitem import lineitem
+
 MYSQL_IP='127.0.0.1'
 MYSQL_PORT=3306
 MYSQL_USER=None
@@ -82,7 +84,7 @@ def mysql_setup():
 		suprice FLOAT(11,4),
 		wppsavings FLOAT(11,4),
 		contdeposit FLOAT(11,4),
-		originalorder INT(10),
+		refnum INT(10),
 		invoicedate VARCHAR(20),
 		PRIMARY KEY (id))''')
 	cur.close()
@@ -136,46 +138,8 @@ def itmdb_pricechange( sku, price ):
 def addlineitem( line, orderdate ):
 	cursor = cnx.cursor(buffered=True)
 
-	print(orderdate)
-	print(line.strip())
-#	m = itemlineok.match(line)
-#	if( m is None ):
-#		print( 'Line failed input validation:' )
-#		print( m.group() )
-#		return;
-
-	linesplit = line.split(',')
-
-	sku = linesplit[0].strip()		#int
-	proddesc = linesplit[1].strip()		#str
-	prodcat = linesplit[2].strip()		#str
-	size = linesplit[3].strip()		#str
-	qty = linesplit[4].strip()		#int
-	uom = linesplit[5].strip()		#str
-	priceperuom = linesplit[6].strip()	#float
-	extprice = linesplit[7].strip()		#float
-	suq = linesplit[8].strip()		#int unsigned
-	suprice = linesplit[9].strip()		#float
-	wpps = linesplit[10].strip()		#float
-	contd = linesplit[11].strip()		#float
-	ref = linesplit[12].strip()		#int
-
-	query = f'''INSERT INTO invoicelog (
-		sku,
-		productdescription,
-		productcategory,
-		size,
-		qty,
-		uom,
-		priceperuom,
-		extendedprice,
-		suquantity,
-		suprice,
-		wppsavings,
-		contdeposit,
-		originalorder,
-		invoicedate
-		) VALUES ({sku},'{proddesc}','{prodcat}','{size}',{qty},'{uom}',{priceperuom},{extprice},{suq},{suprice},{wpps},{contd},{ref},'{orderdate}')'''
+	li = lineitem(*line.split(','))
+	query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
 
 	try:
 		cursor.execute(query)
@@ -202,7 +166,7 @@ def printinvoicetofile( date ):
 	print(f'Printing invoice {date} to file')
 
 	cursor = cnx.cursor(buffered=True)
-	cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, originalorder FROM invoicelog WHERE invoicedate='{date}'")
+	cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'")
 
 	rows = cursor.fetchall()
 
@@ -210,7 +174,7 @@ def printinvoicetofile( date ):
 
 	with open(outfile, 'a') as fp:
 		for row in rows:
-			sku, unitprice, qty, productdescr, originalorder = row
+			sku, unitprice, qty, productdescr, refnum = row
 			fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
 
 	cursor.close()
