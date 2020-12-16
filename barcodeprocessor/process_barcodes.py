@@ -88,15 +88,15 @@ def lookupUPC(barcodes):
             # if there is a result substitute sku, and product name where barcode is.
             if( cursor.rowcount != 0 ):
                 sku, description = cursor.fetchone()
-                parsedbarcodes[f'{sku:06},\t{description}'] = qty
+                parsedbarcodes[f'{sku:06},    {description}'] = qty
             else:
                 #TODO: refactor this
                 #if the first attempt fails try again but with a broader search
-                query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc[1:])}'
+                query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc[2:-1])}'
                 cursor.execute(query)
                 if cursor.rowcount != 0:
                     sku, description = cursor.fetchone()
-                    parsedbarcodes[f'{sku:06},\t{description} (ATTEMPT 2)'] = qty
+                    parsedbarcodes[f'{sku:06},    {description} (ATTEMPT 2)'] = qty
                 else:
                     #if not found in db, put in the UPC.
                     parsedbarcodes[bc] = qty
