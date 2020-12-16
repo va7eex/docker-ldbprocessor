@@ -99,7 +99,7 @@ def lookupUPC(barcodes):
                 cursor.execute(query)
                 if cursor.rowcount != 0:
                     sku, description = cursor.fetchone()
-                    parsedbarcodes[f'{sku:06},    {description} (■■■■LOOSE MATCH■■■■)'] = qty
+                    parsedbarcodes[f'{sku:06},    {description} (!!!!LOOSE MATCH!!!!)'] = qty
                 else:
                     #if not found in db, put in the UPC.
                     parsedbarcodes[bc] = qty
