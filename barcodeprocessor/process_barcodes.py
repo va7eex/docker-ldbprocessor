@@ -82,7 +82,9 @@ def lookupUPC(barcodes):
     for bc, qty in barcodes.items():
         # only perform queries on numbers only.
         if bc.isdigit():
-            if len(bc) > 14 and bc[:1] == '01': bc = bc[2:] #if the barcode is over 14 digits it won't match in the system, if the characters are 01 they're not useful anyways.
+            if len(bc) > 14 and bc[:1] == '01':
+                #if the barcode is over 14 digits it won't match in the system, if the characters are 01 they're not useful anyways.
+                bc = bc[2:]
             # check the orderlog for data if the UPC exists
             query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc)}'
             cursor.execute(query)
@@ -97,7 +99,7 @@ def lookupUPC(barcodes):
                 cursor.execute(query)
                 if cursor.rowcount != 0:
                     sku, description = cursor.fetchone()
-                    parsedbarcodes[f'{sku:06},    {description} (ATTEMPT 2)'] = qty
+                    parsedbarcodes[f'{sku:06},    {description} (■■■■LOOSE MATCH■■■■)'] = qty
                 else:
                     #if not found in db, put in the UPC.
                     parsedbarcodes[bc] = qty
