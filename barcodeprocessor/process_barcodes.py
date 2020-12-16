@@ -94,7 +94,7 @@ def lookupUPC(barcodes):
                 #if the first attempt fails try again but with a broader search
                 query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc[1:])}'
                 cursor.execute(query)
-		if cursor.rowcount != 0:
+                if cursor.rowcount != 0:
                     sku, description = cursor.fetchone()
                     parsedbarcodes[f'{sku:06},\t{description} (ATTEMPT 2)'] = qty
                 else:
