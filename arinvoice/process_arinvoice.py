@@ -162,6 +162,15 @@ def addlineitem( line, orderdate ):
 
 
 
+def checkforinvoicefile(overwritefile):
+	print(f'Checking for invoice file at {overwrite}')
+
+	if path.exists(overwritefile):
+		with open(overwritefile, 'w') as fp:
+			fp.write('')
+		print(f'{overwritefile} was found and cleared in preperation for new csv import.')
+
+
 def printinvoicetofile( date ):
 	print(f'Printing invoice {date} to file')
 
@@ -230,6 +239,7 @@ def processCSV(inputfile):
 				print(emptyline)
 				print(line.strip())
 
+	checkforinvoicefile( outfile )
 	printinvoicetofile( orderdate )
 	printpricechangelist( orderdate )
 
