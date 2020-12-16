@@ -83,7 +83,7 @@ def lookupUPC(barcodes):
         # only perform queries on numbers only.
         if bc.isdigit():
             # check the orderlog for data if the UPC exists
-            query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {bc}'
+            query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc)}'
             cursor.execute(query)
             # if there is a result substitute sku, and product name where barcode is.
             if( cursor.rowcount != 0 ):
