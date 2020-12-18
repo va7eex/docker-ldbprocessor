@@ -18,7 +18,7 @@ services:
     networks:
       - ldbbackend
     volumes:
-      - /mnt/ldbdatabase:/config
+      - /mnt/ldbdatabase_2021:/config
   ldb_redis:
     image: redis:alpine
     container_name: ldb_redis
