@@ -165,7 +165,7 @@ def addlineitem( line, orderdate ):
 def checkforinvoicefile(overwritefile):
 	print(f'Checking for invoice file at {overwritefile}')
 
-	if path.exists(overwritefile):
+	if os.path.exists(overwritefile):
 		with open(overwritefile, 'w') as fp:
 			fp.write('')
 		print(f'{overwritefile} was found and cleared in preperation for new csv import.')
