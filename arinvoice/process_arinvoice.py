@@ -163,7 +163,7 @@ def addlineitem( line, orderdate ):
 
 
 def checkforinvoicefile(overwritefile):
-	print(f'Checking for invoice file at {overwrite}')
+	print(f'Checking for invoice file at {overwritefile}')
 
 	if path.exists(overwritefile):
 		with open(overwritefile, 'w') as fp:
