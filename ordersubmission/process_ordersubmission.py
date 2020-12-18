@@ -21,7 +21,7 @@ from datetime import date
 #import pymysql
 from mysql.connector import (connection)
 
-from linelitem import lineitem
+from lineitem import lineitem
 
 DIRECTORY='/var/ldbinvoice'
 PB_FILE='processedbarcodes.json'
