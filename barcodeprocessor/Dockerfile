@@ -24,7 +24,7 @@ RUN apt install -y python3 \
 	csvkit
 
 ADD ./monitor_file-for-bc.sh /usr/share/monitor_filesystem.sh
-ADD ./process_barcodes.py /usr/share/
+ADD ./*.py /usr/share/
 
 VOLUME ["/var/ldbinvoice"]
 
