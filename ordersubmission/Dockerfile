@@ -33,7 +33,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN date
 
 ADD ./monitor_file-for-os.sh /usr/share/monitor_filesystem.sh
-ADD ./process_ordersubmission.py /usr/share/
+ADD ./*.py /usr/share/
 
 VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
