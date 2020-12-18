@@ -154,7 +154,7 @@ def addlineitem( line, orderdate ):
 		with open(DIRECTORY + '/database-errors.txt', 'a') as fp:
 			fp.write('Error at line:\n%s'%line)
 			fp.write(f'\n{err}')
-			if(len(linesplit) > 13):
+			if(len(li) > 13):
 				fp.write('\n\t Cause: Errant comma somewhere in line')
 			fp.write('\nNOTE: This line has been omitted from the final PO Import file due to errors\n')
 	cnx.commit()

@@ -18,19 +18,19 @@ class lineitem:
 
         self.details = {}
         self.details['sku']             = int(vars.pop(0)   or kwargs.get('sku',-1))                    #int
-        self.details['proddesc']        = (vars.pop(0)   or kwargs.get('proddesc',"default value"))  #str
+        self.details['productdescription']        = (vars.pop(0)   or kwargs.get('productdescription',"default value"))  #str
         if len(vars) > 11:              #if there are more list members than there should be, assume some numpty at LDB put a comma in an item name.
-            self.details['proddesc']    += vars.pop(0)
-        self.details['prodcat']         = (vars.pop(0)   or kwargs.get('prodcat',"default value"))   #str
+            self.details['productdescription']    += vars.pop(0)
+        self.details['productcategory']         = (vars.pop(0)   or kwargs.get('productcategory',"default value"))   #str
         self.details['size']            = (vars.pop(0)   or kwargs.get('size',"default value"))      #str
         self.details['qty']             = int(float(vars.pop(0)   or kwargs.get('qty',0)))                     #int
         self.details['uom']             = (vars.pop(0)   or kwargs.get('uom',"default value"))       #str
         self.details['priceperuom']     = float(vars.pop(0) or kwargs.get('priceperuom',0.0))           #float
-        self.details['extprice']        = float(vars.pop(0) or kwargs.get('extprice',0.0))              #float
+        self.details['extendedprice']        = float(vars.pop(0) or kwargs.get('extendedprice',0.0))              #float
         self.details['suquantity']      = int(float(vars.pop(0)   or kwargs.get('suquantity',0)))              #int unsigned
         self.details['suprice']         = float(vars.pop(0) or kwargs.get('suprice',0.0))               #float
-        self.details['wpps']            = float(vars.pop(0) or kwargs.get('wpps',0.0))                  #float
-        self.details['contd']           = float(vars.pop(0) or kwargs.get('contd',0.0))                 #float
+        self.details['wppsavings']            = float(vars.pop(0) or kwargs.get('wppsavings',0.0))                  #float
+        self.details['contdeposit']           = float(vars.pop(0) or kwargs.get('contdeposit',0.0))                 #float
         self.details['refnum']             = int(float(vars.pop(0)   or kwargs.get('refnum',-1)))                    #int
 
         #we remove 'illegal' characters in the main script, but its always handy to do it again
