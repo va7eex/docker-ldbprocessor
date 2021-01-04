@@ -86,6 +86,7 @@ def mysql_setup():
 		contdeposit FLOAT(11,4),
 		refnum INT(10),
 		invoicedate VARCHAR(20),
+                badbarcode BOOLEAN NOT NULL DEFAULT 0
 		PRIMARY KEY (id))''')
 	cur.close()
 	cnx.commit()
@@ -175,7 +176,7 @@ def printinvoicetofile( date ):
 	print(f'Printing invoice {date} to file')
 
 	cursor = cnx.cursor(buffered=True)
-	cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'")
+	cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum, badbarcode FROM invoicelog WHERE invoicedate='{date}'")
 
 	rows = cursor.fetchall()
 
@@ -183,7 +184,9 @@ def printinvoicetofile( date ):
 
 	with open(outfile, 'a') as fp:
 		for row in rows:
-			sku, unitprice, qty, productdescr, refnum = row
+			sku, unitprice, qty, productdescr, refnum, badbarcode = row
+			if badbarcode:
+				pass
 			fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
 
 	cursor.close()
