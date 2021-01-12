@@ -13,11 +13,9 @@ ENV MYSQL_DB=EXAMPLE
 ENV REDIS_IP=ldbredis
 ENV REDIS_PORT=6379
 
-RUN echo hello
-
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y python3 \
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y python3 \
 #	python3-mysqldb \
 	python3-simplejson \
 	python3-dateutil \
@@ -29,8 +27,8 @@ RUN apt install -y python3 \
 RUN pip3 install html-to-csv \
 	csvkit
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN date
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+    && date
 
 ADD ./monitor_file-for-os.sh /usr/share/monitor_filesystem.sh
 ADD ./*.py /usr/share/
