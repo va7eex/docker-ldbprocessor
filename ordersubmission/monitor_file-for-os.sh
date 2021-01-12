@@ -20,14 +20,6 @@ inotifywait -m $IMPORTPATH -m $FILEPATH -e close_write -e moved_to |
 		echo 'processing OSRPDF'
 #		cp /tmp/"${file%.*}.csv" /var/ldbinvoice/"${file%.*}.csv"
 		python3 -u /usr/share/process_ordersubmission.py \
-			/tmp/"${file%.*}.csv" \
-			/var/ldbinvoice \
-			MYSQL_IP=$MYSQL_IP \
-                        MYSQL_PORT=$MYSQL_PORT \
-                        MYSQL_USER=$MYSQL_USER \
-                        MYSQL_PASS=$MYSQL_PASSWORD \
-                        MYSQL_DB=$MYSQL_DATABASE \
-                        REDIS_IP=$REDIS_IP \
-                        REDIS_PORT=$REDIS_PORT
+			/tmp/"${file%.*}.csv"
 	fi
     done

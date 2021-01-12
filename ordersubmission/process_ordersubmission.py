@@ -2,7 +2,7 @@
 
 __author__ = "David Rickett"
 __credits__ = ["David Rickett"]
-__license__ = "GPL"
+__license__ = "MIT"
 __version__ = "1.0.1"
 __maintainer__ = "David Rickett"
 __email__ = "dap.rickett@gmail.com"
@@ -23,232 +23,202 @@ from mysql.connector import (connection)
 
 from lineitem import lineitem
 
-DIRECTORY='/var/ldbinvoice'
-PB_FILE='processedbarcodes.json'
+	DIRECTORY='/var/ldbinvoice'
+	PB_FILE='processedbarcodes.json'
 
-MYSQL_IP='127.0.0.1'
-MYSQL_PORT=3306
-MYSQL_USER=None
-MYSQL_PASS=None
-MYSQL_DB=None
-REDIS_IP='127.0.0.1'
-REDIS_PORT=6783
+	logtable=['orderlog']
 
-cnx=None
+	keys='SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY'
 
-logtable=['orderlog']
+	itemlist = []
+	itemlistnonstock = []
+	itemlist3rdparty = []
+	itemlist3rdpartynonstock = []
 
-keys='SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY'
+	orderline = re.compile('Order , ?\d{4,}$')
+	orderdateline = re.compile('Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
+	ordershipdateline = re.compile('Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
 
-itemlist = []
-itemlistnonstock = []
-itemlist3rdparty = []
-itemlist3rdpartynonstock = []
+	dollarvalue = re.compile('\$\d+,\d{3}')
 
-orderline = re.compile('Order , ?\d{4,}$')
-orderdateline = re.compile('Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
-ordershipdateline = re.compile('Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
+	itemlistline = re.compile('^\d{8}')
 
-dollarvalue = re.compile('\$\d+,\d{3}')
+	itemlineok = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
-itemlistline = re.compile('^\d{8}')
+	def __converttimedatetonum(self, time):
 
-itemlineok = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
+		# %d%b%y = 02DEC20
 
-def converttimedatetonum(time):
+		time = datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y%m%d')
 
-	# %d%b%y = 02DEC20
+		return time
 
-	time = datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y%m%d')
+	def __getorderfromdatabase(self, ordernumber):
 
-	return time
+		if ordernumber == 'NaN':
+			return
 
-def getorderfromdatabase(ordernumber):
+		cursor = cnx.cursor(buffered=True)
 
-	if ordernumber == 'NaN':
-		return
+	#	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
+		query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
+		cursor.execute(query)
 
-	cursor = cnx.cursor(buffered=True)
+		rows = cursor.fetchall()
+		order = {}
+		order[ordernumber] = {}
+		for row in rows:
+			sku, upc, qty, productdescription = row
+			order[ordernumber][f'{sku:06}'] = {}
+			order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
+			order[ordernumber][f'{sku:06}']['upc'] = upc
+			order[ordernumber][f'{sku:06}']['qty'] = qty
+			order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
+	#		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
+			print('%s, %s x %s'%(order[ordernumber][f'{sku:06}']['sku'],order[ordernumber][f'{sku:06}']['upc'],order[ordernumber][f'{sku:06}']['qty']))
 
-#	query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
-	query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
-	cursor.execute(query)
+		cursor.close()
 
-	rows = cursor.fetchall()
-	order = {}
-	order[ordernumber] = {}
-	for row in rows:
-		sku, upc, qty, productdescription = row
-		order[ordernumber][f'{sku:06}'] = {}
-		order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
-		order[ordernumber][f'{sku:06}']['upc'] = upc
-		order[ordernumber][f'{sku:06}']['qty'] = qty
-		order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
-#		print(('%s (%s) x %s')%(sku.zfill(6), upc, qty))
-		print('%s, %s x %s'%(order[ordernumber][f'{sku:06}']['sku'],order[ordernumber][f'{sku:06}']['upc'],order[ordernumber][f'{sku:06}']['qty']))
+		return order
 
-	cursor.close()
+	def __insertintodatabase(self, line, table, ordnum, orddate, thirdparty):
+		if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
+			return
 
-	return order
+		cursor = cnx.cursor(buffered=True)
 
-def insertintodatabase(line, table, ordnum, orddate, thirdparty):
-	if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
-		return
+		if( itemlineok.match(line) is None ):
+			print( f'Line failed validation:\n\t{line}' )
+			return
 
-	cursor = cnx.cursor(buffered=True)
+		li = lineitem(*line.split(','))
 
-	if( itemlineok.match(line) is None ):
-		print( f'Line failed validation:\n\t{line}' )
-		return
+		query = f'''INSERT INTO orderlog (
+			ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
+			'''
 
-	li = lineitem(*line.split(','))
+		print(query)
+		cursor.execute(query)
+		cnx.commit()
+		cursor.close()
 
-	query = f'''INSERT INTO orderlog (
-		ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
-		'''
+	def __processCSV(self, inputfile):
+		ordernum = 0
+		orderdate = 0
+		ordershipdate = 0
+		append = 0
+		with open(inputfile) as f:
+			for line in f:
 
-	print(query)
-	cursor.execute(query)
-	cnx.commit()
-	cursor.close()
+				#check if any dollar values exceed $999, if it does remove errant commas.
+				if( dollarvalue.match(line) is not None ):
+					print( dollarvalue.group() )
+					line = line.replace(m.group(), m.group().replace(',',''))
 
-def processCSV(file):
-	ordernum = 0
-	orderdate = 0
-	ordershipdate = 0
-	append = 0
-	with open(file) as f:
-		for line in f:
+				#strip all non-alphanumeric characters and whitespace greater than 2
 
-			#check if any dollar values exceed $999, if it does remove errant commas.
-			if( dollarvalue.match(line) is not None ):
-				print( dollarvalue.group() )
-				line = line.replace(m.group(), m.group().replace(',',''))
+				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line).strip()
 
-			#strip all non-alphanumeric characters and whitespace greater than 2
+				#regex find the order number, date, and expected ship date
+				ols = orderline.search(line)
+				if( ols is not None ):
+					print(line)
+					ordernum = ols.group(0).split(',')[1].strip()
+					print(ordernum)
+				odls = orderdateline.search(line)
+				if( odls is not None ):
+					print(line)
+					orderdate = converttimedatetonum(odls.group(0).split(',')[1].strip())
+					print(orderdate)
+				osdls = ordershipdateline.search(line)
+				if( osdls is not None ):
+					print(line)
+					ordershipdate = converttimedatetonum(osdls.group(0).split(',')[1].strip())
+					print(ordershipdate)
 
-			line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line).strip()
+				# each of these headers indicates the start of a new table.
 
-			#regex find the order number, date, and expected ship date
-			ols = orderline.search(line)
-			if( ols is not None ):
-				print(line)
-				ordernum = ols.group(0).split(',')[1].strip()
-				print(ordernum)
-			odls = orderdateline.search(line)
-			if( odls is not None ):
-				print(line)
-				orderdate = converttimedatetonum(odls.group(0).split(',')[1].strip())
-				print(orderdate)
-			osdls = ordershipdateline.search(line)
-			if( osdls is not None ):
-				print(line)
-				ordershipdate = converttimedatetonum(osdls.group(0).split(',')[1].strip())
-				print(ordershipdate)
+				if( line.find('LDB Stocked Product Expected for Delivery') > -1):
+					#we care about this one
+					append=1
+					print('Append = 1')
+				elif( line.find('LDB Stocked Product Currently Unavailable') > -1):
+					append=2
+					print('Append = 2')
+				elif( line.find('Third Party Warehouse Stocked Product on Order') > -1):
+					#we care about this one
+					append=4
+					print('Append = 4')
+				elif( line.find('Third Party Warehouse Stocked Product Currently Unavailable') > -1):
+					append=8
+					print('Append = 8')
 
-			# each of these headers indicates the start of a new table.
+				if( append > 0 ):
+					#remove non-standard characters, whitespace between commas, and if multiple commas exist back to back replace with 0.
+					line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
+					line = re.sub( '( , |, | ,)', ',', line)
+					line = re.sub( '(,,|, ,)', ',0.00,', line )
 
-			if( line.find('LDB Stocked Product Expected for Delivery') > -1):
-				#we care about this one
-				append=1
-				print('Append = 1')
-			elif( line.find('LDB Stocked Product Currently Unavailable') > -1):
-				append=2
-				print('Append = 2')
-			elif( line.find('Third Party Warehouse Stocked Product on Order') > -1):
-				#we care about this one
-				append=4
-				print('Append = 4')
-			elif( line.find('Third Party Warehouse Stocked Product Currently Unavailable') > -1):
-				append=8
-				print('Append = 8')
+					# subtotal denotes the end of a table.
+					if 'Subtotal' in line:
+						append = 0
 
-			if( append > 0 ):
-				#remove non-standard characters, whitespace between commas, and if multiple commas exist back to back replace with 0.
-				line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
-				line = re.sub( '( , |, | ,)', ',', line)
-				line = re.sub( '(,,|, ,)', ',0.00,', line )
+					if( append == 1 ):
+						if( itemlistline.match(line) is not None ):
+							insertintodatabase(line,0,ordernum,orderdate,False)
+					elif( append == 4 ):
+						if( itemlistline.match(line) is not None ):
+							insertintodatabase(line,0,ordernum,orderdate,True)
 
-				# subtotal denotes the end of a table.
-				if 'Subtotal' in line:
-					append = 0
+		return ordernum, orderdate, ordershipdate
 
-				if( append == 1 ):
-					if( itemlistline.match(line) is not None ):
-						insertintodatabase(line,0,ordernum,orderdate,False)
-				elif( append == 4 ):
-					if( itemlistline.match(line) is not None ):
-						insertintodatabase(line,0,ordernum,orderdate,True)
+	def processCSV(self, inputfile, outputfile):
+		order = {}
+		order['ordernum'], order['orderdate'], order['ordershipdate'] = processCSV(file)
 
-	return ordernum, orderdate, ordershipdate
+		with open(f'{DIRECTORY}/order-{order['ordernum']}.txt'), 'w') as fp:
+			json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_keys=True)
 
+	def __mysql_setup(self, mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
+		self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
+					host=mysql_ip,
+					port=mysql_port,
+					database=mysql_db)
 
-def mysql_setup():
-	global cnx
-	cnx = connection.MySQLConnection(user=MYSQL_USER, password=MYSQL_PASS,
-				host=MYSQL_IP,
-				port=MYSQL_PORT,
-				database=MYSQL_DB)
+		cur = self.__cnx.cursor(buffered=True)
+		cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
+			id INT NOT NULL AUTO_INCREMENT,
+			sku MEDIUMINT(8) ZEROFILL,
+			upc BIGINT UNSIGNED,
+			productdescription VARCHAR(255),
+			sellingunitsize VARCHAR(32),
+			uom VARCHAR(20),
+			qty SMALLINT UNSIGNED,
+			orderdate INT(8) UNSIGNED,
+			ordernumber INT UNSIGNED,
+			thirdparty BOOL,
+			PRIMARY KEY (id))''')
+		self.__cnx.commit()
+		cur.close()
+		self.__cnx.close()
 
-	cur = cnx.cursor(buffered=True)
-	cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
-		id INT NOT NULL AUTO_INCREMENT,
-		sku MEDIUMINT(8) ZEROFILL,
-		upc BIGINT UNSIGNED,
-		productdescription VARCHAR(255),
-		sellingunitsize VARCHAR(32),
-		uom VARCHAR(20),
-		qty SMALLINT UNSIGNED,
-		orderdate INT(8) UNSIGNED,
-		ordernumber INT UNSIGNED,
-		thirdparty BOOL,
-		PRIMARY KEY (id))''')
-	cnx.commit()
-	cur.close()
+	def __importconfig(self, file):
+		return 0
 
+	def __init__(redis_ip,redis_port,mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
+		print('LDB OSR Processor started.')
 
-def importconfig(file):
-	return 0
+		self.__mysql_setup(mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db)
 
-def main(file, outdir, **kwargs):
-	print('LDB OSR Processor started.')
-#	for k, v in kwargs.items():
-#		print('keyword argument: {} = {}'.format(k, v))
-
-	global MYSQL_USER
-	global MYSQL_PASS
-	global MYSQL_IP
-	global MYSQL_PORT
-	global MYSQL_DB
-	global REDIS_IP
-	global REDIS_PORT
-
-	#import a config file
-	if 'configfile' in kwargs:
-		importconfig(kwargs['configfile'])
-
-	if 'MYSQL_USER' in kwargs:
-		MYSQL_USER = kwargs['MYSQL_USER']
-	if 'MYSQL_PASS' in kwargs:
-		MYSQL_PASS = kwargs['MYSQL_PASS']
-	if 'MYSQL_IP' in kwargs:
-		MYSQL_IP = kwargs['MYSQL_IP']
-	if 'MYSQL_PORT' in kwargs:
-		MYSQL_PORT = int(kwargs['MYSQL_PORT'])
-	if 'MYSQL_DB' in kwargs:
-		MYSQL_DB = kwargs['MYSQL_DB']
-	if 'REDIS_IP' in kwargs:
-		REDIS_IP = kwargs['REDIS_IP']
-	if 'REDIS_PORT' in kwargs:
-		REDIS_PORT = int(kwargs['REDIS_PORT'])
-
-	mysql_setup()
-	order = {}
-	order['ordernum'], order['orderdate'], order['ordershipdate'] = processCSV(file)
-
-	with open('%s/order-%s.txt'%(outdir, order['ordernum']), 'w') as fp:
-		json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_keys=True)
-	cnx.close()
 
 if __name__=='__main__':
-	main(sys.argv[1], sys.argv[2], **dict(arg.split('=') for arg in sys.argv[3:])) # kwargs
+	osr = arinvoice(
+        os.getenv('REDIS_IP'), 
+        os.getenv('REDIS_PORT'), 
+        os.getenv('MYSQL_USER'), 
+        os.getenv('MYSQL_PASSWORD'),
+        os.getenv('MYSQL_IP'),
+        os.getenv('MYSQL_PORT'),
+        os.getenv('MYSQL_DATABASE'))
+    osr.processCSV(
+        sys.argv[1])
