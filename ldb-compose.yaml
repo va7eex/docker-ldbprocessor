@@ -1,8 +1,8 @@
 version: "3"
 services:
 
-  #database
-
+  #databases
+  ## MariaDB
   ldb_database:
     image: linuxserver/mariadb:latest
     container_name: ldb_database
@@ -18,7 +18,8 @@ services:
     networks:
       - ldbbackend
     volumes:
-      - /mnt/ldbdatabase_2021:/config
+      - /mnt/ldbdatabase:/config
+  ## Redis
   ldb_redis:
     image: redis:alpine
     container_name: ldb_redis
@@ -27,7 +28,7 @@ services:
       - ldbbackend
 
   #apps, will build to order
-
+  ## Barcode processor
   ldb_processor_bc:
     container_name: ldb_processor_bc
     build:
@@ -50,6 +51,7 @@ services:
       - ldb_database
     networks:
       - ldbbackend
+  ## Order Submission Processor
   ldb_processor_os:
     container_name: ldb_processor_os
     build:
@@ -72,6 +74,7 @@ services:
       - ldb_database
     networks:
       - ldbbackend
+  ## ARInvoice Processor
   ldb_processor_ar:
     container_name: ldb_processor_ar
     build:
@@ -94,6 +97,7 @@ services:
       - ldb_database
     networks:
       - ldbbackend
+  ## IMAP downloader
   ldb_emailwatcher:
     container_name: ldb_emailwatcher
     build:
@@ -113,5 +117,37 @@ services:
     depends_on:
       - ldb_processor_ar
       - ldb_processor_os
+
+  # Support containers
+  ## Database Updater
+  ldb_dbupdater:
+    container_name: ldb_dbupdater
+    build:
+      context: dbupdater/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    networks:
+      - ldbbackend
+    depends_on:
+      - ldb_database
+  ## Network Label Maker API
+  ldb_labelprinter:
+    container_name: ldb_labelprinter
+    build:
+      context: labelmaker/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    environment:
+      - PRINTER_IP=${PRINTER_IP}
+    restart: always
+    networks:
+      - ldbbackend
 networks:
   ldbbackend:
