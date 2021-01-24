@@ -32,7 +32,7 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    def __init__(redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db:
+    def __init__(redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
 
         self.orderdate='nodatefound'
         self.__cnx = None
@@ -79,7 +79,7 @@ class arinvoice:
 
     # write price report to file, later will make this a redis DB
     def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None):
-        with open(f'{DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
+        with open(f'{self.DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
             if bool(databaseprice):
                 alert=''
                 if( (price - databaseprice)/ databaseprice > 0.1 ):
@@ -135,7 +135,7 @@ class arinvoice:
             print(line)
             print('')
             print(query)
-            with open(f'{DIRECTORY}/database-errors.txt', 'a') as fp:
+            with open(f'{self.DIRECTORY}/database-errors.txt', 'a') as fp:
                 fp.write('Error at line:\n%s'%line)
                 fp.write(f'\n{err}')
                 if(len(li) > 13):
@@ -149,8 +149,8 @@ class arinvoice:
     def __checkforinvoicefile(self, overwritefile):
         print(f'Checking for invoice file at {overwritefile}')
 
-        if os.path.exists(f'{DIRECTORY}/{overwritefile}''):
-            with open(f'{DIRECTORY}/{overwritefile}', 'w') as fp:
+        if os.path.exists(f'{self.DIRECTORY}/{overwritefile}):
+            with open(f'{self.DIRECTORY}/{overwritefile}', 'w') as fp:
                 fp.write('')
             print(f'{overwritefile} was found and cleared in preperation for new csv import.')
 
@@ -165,7 +165,7 @@ class arinvoice:
 
         print('Total Rows: %s'%len(rows))
 
-        with open(f'{DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
+        with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
             for row in rows:
                 sku, unitprice, qty, productdescr, refnum, badbarcode = row
                 if badbarcode:
@@ -188,7 +188,7 @@ class arinvoice:
         cursor.close()
 
 
-    def processCSV(self, inputfile, outputfile_po):
+    def processCSV(self, inputfile):
         #this is what an empty line looks like
         emptyline = ',,,,,,,,,,,,,'
         with open(inputfile) as f:
@@ -208,7 +208,7 @@ class arinvoice:
                 if( line.strip() == emptyline.strip() and append ):
                     append=False
                 if( append ):
-                    imparsabledollaramount = DOLLARAMOUNT.search(line)
+                    imparsabledollaramount = self.DOLLARAMOUNT.search(line)
                     if( imparsabledollaramount is not None ):
                         print( '!!! WARNING: comma in dollar amount !!! %s'%imparsabledollaramount.group() )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))

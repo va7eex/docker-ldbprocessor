@@ -23,12 +23,6 @@ from mysql.connector import (connection)
 
 class BarcodeProcessor:
 
-    self.scannedlist = {}
-
-    self.key_scan = 'scanned'
-    self.key_tally = '_tally'
-    self.key_checksum = 'checksum'
-
     BARCODETYPELOOKUPTABLE = {
         '01':'Code 39',
         '02':'Codabar',
@@ -63,7 +57,13 @@ class BarcodeProcessor:
         '25':'GS1 Databar Exp'
     }
 
+    key_scan = 'scanned'
+    key_tally = '_tally'
+    key_checksum = 'checksum'
+
     def __init__(redis_ip, redis_port, mysql_ip, mysql_port, mysql_user, mysql_pass, mysql_db): 
+
+        self.scannedlist = {}
 
         self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
                     host=mysql_ip,
@@ -109,7 +109,7 @@ class BarcodeProcessor:
                     cursor.execute(query)
                     if cursor.rowcount != 0:
                         sku, description = cursor.fetchone()
-                        parsedbarcodes[f'{sku:06},    {description} (!!!!LOOSE MATCH!!!!)'] = qty
+                        parsedbarcodes[f'{sku:06}, !! {description}'] = qty # the '!!' indicates loose match
                     else:
                         #if not found in db, put in the UPC.
                         parsedbarcodes[bc] = qty
@@ -124,8 +124,8 @@ class BarcodeProcessor:
         for key in self.__r.scan_iter(str(scandate) + '*'):
             print(key)
             if not f'{scandate}_scanstats' in key:
-                barcodes[key] = lookupUPC(r.hgetall(key))
-                tally[key] = sumRedisValues(r.hvals(key))
+                barcodes[key] = self.__lookupUPC(r.hgetall(key))
+                tally[key] = self.__sumRedisValues(r.hvals(key))
                 total += tally[key]
         return barcodes, tally, total
 
@@ -162,7 +162,7 @@ class BarcodeProcessor:
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
                 elif( 'CLEARLASTCLEAR' in line[3] ):
                     if( previousline != None ):
-                        r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}',previousline,-1)
+                        self.__r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}',previousline,-1)
                 #allow other programs to act on type of scanned inventory
                 elif( 'inventorytype=' in line[3] ):
                     inventorytype = line[3].replace('inventorytype=','')
@@ -178,11 +178,11 @@ class BarcodeProcessor:
 
                 else:
                     # increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
-                    r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}', line[3],1)
+                    self.__r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}', line[3],1)
                     #generate stats, I love stats.
                     if not 'DOESNOTSCAN' in line[3]:
-                        r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
-                        r.hincrby(f'{latestscan}_scanstats', barcodetypelookuptable[line[2]],1)
+                        self.__r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
+                        self.__r.hincrby(f'{latestscan}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
                     #if the data on the line is larger than 20 flag it for review.
                     if( len(line[3]) > 20 ):
                         forReview.append(line[3])
@@ -195,7 +195,7 @@ class BarcodeProcessor:
         self.scannedlist[latestscan] = {}
         self.scannedlist[latestscan]['receiving_type']=inventorytype
         self.scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = self.__countBarcodes(latestscan)
-        self.scannedlist[latestscan]['stats4nerds'] = r.hgetall(f'{latestscan}_scanstats')
+        self.scannedlist[latestscan]['stats4nerds'] = self.__r.hgetall(f'{latestscan}_scanstats')
         if( len(forReview) > 0 ):
             self.scannedlist[latestscan]['_possible_scan_errors'] = forReview
 
