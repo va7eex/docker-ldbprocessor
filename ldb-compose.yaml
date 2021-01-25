@@ -120,34 +120,34 @@ services:
 
   # Support containers
   ## Database Updater
-  ldb_dbupdater:
-    container_name: ldb_dbupdater
-    build:
-      context: dbupdater/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    user: "1002:1002"
-    environment:
-    volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-    restart: always
-    networks:
-      - ldbbackend
-    depends_on:
-      - ldb_database
+#  ldb_dbupdater:
+#    container_name: ldb_dbupdater
+#    build:
+#      context: dbupdater/
+#      dockerfile: Dockerfile
+#      args:
+#        - TZ=${TZ}
+#    user: "1002:1002"
+#    environment:
+#    volumes:
+#      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+#    restart: always
+#    networks:
+#      - ldbbackend
+#    depends_on:
+#      - ldb_database
   ## Network Label Maker API
-  ldb_labelprinter:
-    container_name: ldb_labelprinter
-    build:
-      context: labelmaker/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    environment:
-      - PRINTER_IP=${PRINTER_IP}
-    restart: always
-    networks:
-      - ldbbackend
+#  ldb_labelprinter:
+#    container_name: ldb_labelprinter
+#    build:
+#      context: labelmaker/
+#      dockerfile: Dockerfile
+#      args:
+#        - TZ=${TZ}
+#    environment:
+#      - PRINTER_IP=${PRINTER_IP}
+#    restart: always
+#    networks:
+#      - ldbbackend
 networks:
   ldbbackend:
