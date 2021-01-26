@@ -149,7 +149,7 @@ class arinvoice:
     def __checkforinvoicefile(self, overwritefile):
         print(f'Checking for invoice file at {overwritefile}')
 
-        if os.path.exists(f'{self.DIRECTORY}/{overwritefile}):
+        if os.path.exists(f'{self.DIRECTORY}/{overwritefile}'):
             with open(f'{self.DIRECTORY}/{overwritefile}', 'w') as fp:
                 fp.write('')
             print(f'{overwritefile} was found and cleared in preperation for new csv import.')
