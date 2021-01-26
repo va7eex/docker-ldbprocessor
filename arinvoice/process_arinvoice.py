@@ -49,6 +49,7 @@ class arinvoice:
         cur.execute('''CREATE TABLE IF NOT EXISTS pricechangelist
             (sku MEDIUMINT(8) ZEROFILL,
             price VARCHAR(20),
+            badbarcode BOOLEAN NOT NULL DEFAULT 0,
             lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)''')
 
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
@@ -69,7 +70,6 @@ class arinvoice:
             contdeposit FLOAT(11,4),
             refnum INT(10),
             invoicedate VARCHAR(20),
-            badbarcode BOOLEAN NOT NULL DEFAULT 0
             PRIMARY KEY (id))''')
         cur.close()
         self.__cnx.commit()
@@ -101,16 +101,18 @@ class arinvoice:
     def __itmdb_pricechange(self, orderdate, sku, price):
         cursor = self.__cnx.cursor(buffered=True)
 
-        query = f'SELECT price, lastupdated FROM pricechangelist WHERE sku={sku}'
+        query = f'SELECT price, lastupdated, badbarcode FROM pricechangelist WHERE sku={sku}'
 
         cursor.execute(query)
 
         if( cursor.rowcount != 0 ):
-            dbprice, dbdate = cursor.fetchone()
+            dbprice, dbdate, badbarcode = cursor.fetchone()
             if( float(dbprice.strip()) != float(price) ):
                 dbprice = float(dbprice)
                 self.__addtopricechangelist( orderdate, sku, price, databaseprice=dbprice, databasedate=dbdate )
                 query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
+                if bool(badbarcode):
+                    print('Bad Barcode Detected')
                 cursor.execute(query)
         else:
             query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
@@ -159,7 +161,7 @@ class arinvoice:
         print(f'Printing invoice {date} to file')
 
         cursor = self.__cnx.cursor(buffered=True)
-        cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum, badbarcode FROM invoicelog WHERE invoicedate='{date}'")
+        cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'")
 
         rows = cursor.fetchall()
 
@@ -167,7 +169,7 @@ class arinvoice:
 
         with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
             for row in rows:
-                sku, unitprice, qty, productdescr, refnum, badbarcode = row
+                sku, unitprice, qty, productdescr, refnum = row
                 if badbarcode:
                     pass
                 fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
