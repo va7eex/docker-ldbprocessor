@@ -43,7 +43,7 @@ class OrderSubmissionReport:
 
 	ITEMLINEOK = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
-	def __init__(redis_ip,redis_port,mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
+	def __init__(self, redis_ip,redis_port,mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
 		print('LDB OSR Processor started.')
 
 		self.__mysql_setup(mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db)
