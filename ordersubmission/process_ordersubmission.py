@@ -209,7 +209,7 @@ class OrderSubmissionReport:
 
 
 if __name__=='__main__':
-	osr = OrderSubmissionReport(
+    osr = OrderSubmissionReport(
         os.getenv('REDIS_IP'), 
         os.getenv('REDIS_PORT'), 
         os.getenv('MYSQL_USER'), 
