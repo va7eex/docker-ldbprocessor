@@ -114,7 +114,7 @@ class OrderSubmissionReport:
 
 		cursor = self.__cnx.cursor(buffered=True)
 
-		if( itemlineok.match(line) is None ):
+		if( self.ITEMLINEOK.match(line) is None ):
 			print( f'Line failed validation:\n\t{line}' )
 			return
 
