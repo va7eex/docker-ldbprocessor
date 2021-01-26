@@ -195,9 +195,9 @@ class OrderSubmissionReport:
 
 		return ordernum, orderdate, ordershipdate
 
-	def processCSV(self, inputfile, outputfile):
+	def processCSV(self, inputfile):
 		order = {}
-		order['ordernum'], order['orderdate'], order['ordershipdate'] = self.__processCSV(file)
+		order['ordernum'], order['orderdate'], order['ordershipdate'] = self.__processCSV(inputfile)
 
 		with open(f'{DIRECTORY}/order-{order['ordernum']}.txt'), 'w') as fp:
 			json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_KEYS=True)
