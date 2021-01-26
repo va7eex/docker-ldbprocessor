@@ -217,5 +217,4 @@ if __name__=='__main__':
         os.getenv('MYSQL_IP'),
         os.getenv('MYSQL_PORT'),
         os.getenv('MYSQL_DATABASE'))
-    osr.processCSV(
-        sys.argv[1])
+    osr.processCSV(sys.argv[1])
