@@ -46,13 +46,14 @@ class OrderSubmissionReport:
 	def __init__(self, redis_ip,redis_port,mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
 		print('LDB OSR Processor started.')
 
-		self.__mysql_setup(mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db)
-
-	def __mysql_setup(self, mysql_user,mysql_pass,mysql_ip,mysql_port,mysql_db):
 		self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
 					host=mysql_ip,
 					port=mysql_port,
 					database=mysql_db)
+
+		self.__mysql_table_setup()
+
+	def __mysql_table_setup(self):
 
 		cur = self.__cnx.cursor(buffered=True)
 		cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
@@ -69,6 +70,8 @@ class OrderSubmissionReport:
 			PRIMARY KEY (id))''')
 		self.__cnx.commit()
 		cur.close()
+
+	def finish(self):
 		self.__cnx.close()
 
 	def __converttimedatetonum(self, time):
@@ -219,3 +222,4 @@ if __name__=='__main__':
         os.getenv('MYSQL_PORT'),
         os.getenv('MYSQL_DATABASE'))
     osr.processCSV(sys.argv[1])
+    osr.finish()
