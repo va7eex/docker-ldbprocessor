@@ -198,8 +198,8 @@ class OrderSubmissionReport:
 	def processCSV(self, inputfile):
 		order = {}
 		order['ordernum'], order['orderdate'], order['ordershipdate'] = self.__processCSV(inputfile)
-
-		with open(f'{DIRECTORY}/order-{order['ordernum']}.txt'), 'w') as fp:
+		ordernum = order['ordernum']
+		with open(f'{DIRECTORY}/order-{ordernum}.txt'), 'w') as fp:
 			json.dump({**order, **getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_KEYS=True)
 
 
