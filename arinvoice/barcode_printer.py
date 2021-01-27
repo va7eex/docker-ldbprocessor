@@ -25,7 +25,7 @@ class Label_Maker:
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
-        y_start = self.margins*2*self.dpi
+        y_start = self.margins*self.dpi
         x_offset = self.dpi * (1/16)
         y_offset = self.dpi * (1/16)
 
