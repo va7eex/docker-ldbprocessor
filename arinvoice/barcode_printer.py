@@ -10,7 +10,7 @@ class Label_Maker:
     DPI203 = 203
     DPI300 = 300
 
-    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=.125, columns=2, fontsize=20):
+    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=.125, columns=2, fontsize=30):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -25,17 +25,17 @@ class Label_Maker:
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
-        y_start = self.margins*self.dpi
-        x_offset = self.dpi * (1/8)
-        y_offset = self.dpi * (1/8)
+        y_start = self.margins*2*self.dpi
+        x_offset = self.dpi * (1/16)
+        y_offset = self.dpi * (1/16)
 
         zpl.add_default_font('0', character_height=self.fontsize)
 
         for c in range(self.columns):
             x_start += (self.width+self.margins)*self.dpi*c
-            zpl.add_field_origin(int(x_start + x_offset), int(y_start))
-            zpl.add_field_data(text[:30]) 
-            zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset*1.5))
+            zpl.add_field_origin(int(x_start+(c*x_offset)), int(y_start))
+            zpl.add_field_data(text[:14])
+            zpl.add_field_origin(int(x_start + x_offset+(c*x_offset)), int(y_start + y_offset*2.5))
             bc = Code128_Barcode(barcode, 'N', 30, 'Y')
             zpl.add_barcode(bc)
 
