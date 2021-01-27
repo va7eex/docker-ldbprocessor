@@ -39,11 +39,10 @@ class arinvoice:
         self.__cnx = None
         self.__mysql_setup(mysql_user,mysql_pass,mysql_db,mysql_ip,mysql_port)
 
+        self.labelmaker = None 
         if labelmaker != '127.0.0.1':
             self.labelmaker = Label_Maker(ipaddress=labelmaker)
-        else:
-            self.labelmaker = None 
-
+        
     def __mysql_setup(self, mysql_user, mysql_pass,mysql_db,mysql_ip,mysql_port=3306):
         self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
                     host=mysql_ip,
@@ -241,6 +240,7 @@ if __name__=='__main__':
         os.getenv('MYSQL_PASSWORD'),
         os.getenv('MYSQL_IP'),
         os.getenv('MYSQL_PORT'),
-        os.getenv('MYSQL_DATABASE'))
+        os.getenv('MYSQL_DATABASE'),
+        os.getenv('LABELMAKER'))
     ari.processCSV(
         sys.argv[1])

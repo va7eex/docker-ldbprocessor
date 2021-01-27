@@ -10,7 +10,7 @@ class Label_Maker:
     DPI203 = 8
     DPI300 = 12
 
-    def __init__(self, ipaddress, dpi=self.DPI203, imperial=True, width=1, height=0.5, margins=.125, columns=2):
+    def __init__(self, ipaddress, dpi=8, imperial=True, width=1, height=0.5, margins=.125, columns=2):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -20,7 +20,7 @@ class Label_Maker:
         self.dpi = dpi
         self.columns = columns
 
-    def printlabel(text, barcode, quantity=12):
+    def printlabel(self, text, barcode, quantity=12):
         zpl = ZPLDocument()
         
         x_start = self.margins*(self.imperial*self.INCH*self.dpi)
