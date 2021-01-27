@@ -10,7 +10,7 @@ class Label_Maker:
     DPI203 = 203
     DPI300 = 300
 
-    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=.125, columns=2, fontsize=30):
+    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=(1/16), columns=2, fontsize=30):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -25,7 +25,7 @@ class Label_Maker:
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
-        y_start = self.margins*self.dpi
+        y_start = self.margins*2*self.dpi
         x_offset = self.dpi * (1/16)
         y_offset = self.dpi * (1/16)
 
