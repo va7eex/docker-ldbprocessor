@@ -29,7 +29,7 @@ class Label_Maker:
         y_offset = self.dpi
 
         for c in range(self.columns):
-            x_start += (width+margins)*(self.imperial*self.INCH*self.dpi)*c
+            x_start += (self.width+self.margins)*(self.imperial*self.INCH*self.dpi)*c
             zpl.add_field_origin(x_start + x_offset, y_start + y_offset)
             bc = Code128_Barcode(barcode, 'N', 30, 'Y')
             zpl.add_barcode(bc)
