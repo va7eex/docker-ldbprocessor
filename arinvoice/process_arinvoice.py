@@ -24,6 +24,7 @@ from datetime import date
 from mysql.connector import (connection)
 
 from lineitem import lineitem
+from barcode_printer import Label_Maker
 
 class arinvoice:
 
@@ -32,11 +33,16 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
+    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db, labelmaker='127.0.0.1'):
 
         self.orderdate='nodatefound'
         self.__cnx = None
         self.__mysql_setup(mysql_user,mysql_pass,mysql_db,mysql_ip,mysql_port)
+
+        if labelmaker != '127.0.0.1':
+            self.labelmaker = Label_Maker(ipaddress=labelmaker)
+        else:
+            self.labelmaker = None 
 
     def __mysql_setup(self, mysql_user, mysql_pass,mysql_db,mysql_ip,mysql_port=3306):
         self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
@@ -111,8 +117,9 @@ class arinvoice:
                 dbprice = float(dbprice)
                 self.__addtopricechangelist( orderdate, sku, price, databaseprice=dbprice, databasedate=dbdate )
                 query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
-                if bool(badbarcode):
+                if bool(badbarcode) and self.labelmaker != None:
                     print('Bad Barcode Detected')
+                    self.labelmaker.printlabel(sku,sku)
                 cursor.execute(query)
         else:
             query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
@@ -130,13 +137,7 @@ class arinvoice:
         try:
             cursor.execute(query)
         except Exception as err:
-            print('')
-            print('!!! ERROR !!!')
-            print(err)
-            print('')
-            print(line)
-            print('')
-            print(query)
+            print(f'\n!!! ERROR !!!\n{err}\n{line}\n{query}\n')
             with open(f'{self.DIRECTORY}/database-errors.txt', 'a') as fp:
                 fp.write('Error at line:\n%s'%line)
                 fp.write(f'\n{err}')
