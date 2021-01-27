@@ -32,7 +32,7 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    def __init__(redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
+    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
 
         self.orderdate='nodatefound'
         self.__cnx = None

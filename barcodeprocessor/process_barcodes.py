@@ -61,7 +61,7 @@ class BarcodeProcessor:
     key_tally = '_tally'
     key_checksum = 'checksum'
 
-    def __init__(redis_ip, redis_port, mysql_ip, mysql_port, mysql_user, mysql_pass, mysql_db): 
+    def __init__(self, redis_ip, redis_port, mysql_ip, mysql_port, mysql_user, mysql_pass, mysql_db): 
 
         self.scannedlist = {}
 
