@@ -103,7 +103,7 @@ class arinvoice:
     def __generatepricechangereport(self):
         return
 
-    def __itmdb_pricechange(self, orderdate, sku, price):
+    def __itmdb_pricechange(self, orderdate, sku, price, name=''):
         cursor = self.__cnx.cursor(buffered=True)
 
         query = f'SELECT price, lastupdated, badbarcode FROM pricechangelist WHERE sku={sku}'
@@ -118,7 +118,7 @@ class arinvoice:
                 query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
                 if bool(badbarcode) and self.labelmaker != None:
                     print('Bad Barcode Detected')
-                    self.labelmaker.printlabel(sku,sku)
+                    self.labelmaker.printlabel(name,sku)
                 cursor.execute(query)
         else:
             query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
@@ -177,13 +177,13 @@ class arinvoice:
 
     def __printpricechangelist(self, date):
         cursor = self.__cnx.cursor(buffered=True)
-        cursor.execute(("SELECT DISTINCT sku, suprice FROM invoicelog WHERE invoicedate='%s'")%(date))
+        cursor.execute(("SELECT DISTINCT sku, suprice, productdescription FROM invoicelog WHERE invoicedate='%s'")%(date))
 
         rows = cursor.fetchall()
 
         for row in rows:
-            sku, price = row
-            self.__itmdb_pricechange( date, sku, price )
+            sku, price, name = row
+            self.__itmdb_pricechange( date, sku, price, name )
 
         cursor.close()
 
