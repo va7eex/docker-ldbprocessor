@@ -45,5 +45,5 @@ class Label_Maker:
         printer.print_zpl(zpl)
 
 if __name__=='__main__':
-    lm = Label_Maker(ipaddress = sys.argv[1], fontsize=sys.argv[4])
+    lm = Label_Maker(ipaddress = sys.argv[1], fontsize=int(sys.argv[4]))
     lm.printlabel(sys.argv[2],sys.argv[3])
