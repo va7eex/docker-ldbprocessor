@@ -30,7 +30,7 @@ class Label_Maker:
 
         for c in range(self.columns):
             x_start += (self.width+self.margins)*(self.imperial*self.INCH*self.dpi)*c
-            zpl.add_field_origin(x_start + x_offset, y_start + y_offset)
+            zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset))
             bc = Code128_Barcode(barcode, 'N', 30, 'Y')
             zpl.add_barcode(bc)
 
@@ -41,4 +41,4 @@ class Label_Maker:
 
 if __name__=='__main__':
     lm = Label_Maker(ipaddress = sys.argv[1])
-    lm.printlabel('','test')
+    lm.printlabel('',sys.argv[2])
