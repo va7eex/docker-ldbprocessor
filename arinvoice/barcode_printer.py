@@ -7,29 +7,29 @@ class Label_Maker:
     INCH=2.54
     
     #what these translate to in linear cm
-    DPI203 = 8
-    DPI300 = 12
+    DPI203 = 203
+    DPI300 = 300
 
-    def __init__(self, ipaddress, dpi=8, imperial=True, width=1, height=0.5, margins=.125, columns=2):
+    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=.125, columns=2):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
         self.margins = margins
-        self.imperial = imperial
         self.ipaddress = ipaddress
         self.dpi = dpi
         self.columns = columns
+        self.metric=metric
 
     def printlabel(self, text, barcode, quantity=12):
         zpl = ZPLDocument()
         
-        x_start = self.margins*(self.imperial*self.INCH*self.dpi)
-        y_start = self.margins*(self.imperial*self.INCH*self.dpi)
-        x_offset = self.dpi
-        y_offset = self.dpi
+        x_start = self.margins*self.dpi
+        y_start = self.margins*self.dpi
+        x_offset = self.dpi * (1/8)
+        y_offset = self.dpi * (1/8)
 
         for c in range(self.columns):
-            x_start += (self.width+self.margins)*(self.imperial*self.INCH*self.dpi)*c
+            x_start += (self.width+self.margins)*self.dpi*c
             zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset))
             bc = Code128_Barcode(barcode, 'N', 30, 'Y')
             zpl.add_barcode(bc)
