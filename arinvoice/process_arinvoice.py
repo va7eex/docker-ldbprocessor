@@ -170,8 +170,6 @@ class arinvoice:
         with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
             for row in rows:
                 sku, unitprice, qty, productdescr, refnum = row
-                if badbarcode:
-                    pass
                 fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
 
         cursor.close()
