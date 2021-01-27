@@ -43,4 +43,4 @@ class Label_Maker:
 
 if __name__=='__main__':
     lm = Label_Maker(ipaddress = sys.argv[1])
-    lm.printlabel(sys.argv[2],sys.argv[3]])
+    lm.printlabel(sys.argv[2],sys.argv[3])
