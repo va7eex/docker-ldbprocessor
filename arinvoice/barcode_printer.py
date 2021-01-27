@@ -28,11 +28,13 @@ class Label_Maker:
         x_offset = self.dpi * (1/8)
         y_offset = self.dpi * (1/8)
 
+        zpl.add_default_font('0', character_height=12)
+
         for c in range(self.columns):
             x_start += (self.width+self.margins)*self.dpi*c
-            zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset))
+            zpl.add_field_origin(int(x_start + x_offset), int(y_start))
             zpl.add_field_data(text[:30]) 
-            zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset*2))
+            zpl.add_field_origin(int(x_start + x_offset), int(y_start + y_offset*1.5))
             bc = Code128_Barcode(barcode, 'N', 30, 'Y')
             zpl.add_barcode(bc)
 
