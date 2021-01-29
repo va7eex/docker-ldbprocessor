@@ -211,7 +211,7 @@ if __name__=='__main__':
         os.getenv('REDIS_PORT'),
         os.getenv('MYSQL_IP'),
         os.getenv('MYSQL_PORT'),
-        os.getenv('MYSQL_USERNAME'),
+        os.getenv('MYSQL_USER'),
         os.getenv('MYSQL_PASSWORD'), 
         os.getenv('MYSQL_DATABASE'))
     bc.processCSV(sys.argv[1], sys.argv[2])
