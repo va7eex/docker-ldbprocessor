@@ -195,7 +195,7 @@ class BarcodeProcessor:
         self.scannedlist = {}
         self.scannedlist[latestscan] = {}
         self.scannedlist[latestscan]['receiving_type']=inventorytype
-        self.scannedlist[latestscan]['barcodes_by_pallet'], scannedlist[latestscan]['_total_by_pallet'], scannedlist[latestscan]['_total'] = self.__countBarcodes(latestscan)
+        self.scannedlist[latestscan]['barcodes_by_pallet'], self.scannedlist[latestscan]['_total_by_pallet'], self.scannedlist[latestscan]['_total'] = self.__countBarcodes(latestscan)
         self.scannedlist[latestscan]['stats4nerds'] = self.__r.hgetall(f'{latestscan}_scanstats')
         if( len(forReview) > 0 ):
             self.scannedlist[latestscan]['_possible_scan_errors'] = forReview
