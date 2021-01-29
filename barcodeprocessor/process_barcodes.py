@@ -125,8 +125,8 @@ class BarcodeProcessor:
         for key in self.__r.scan_iter(str(scandate) + '*'):
             print(key)
             if not f'{scandate}_scanstats' in key:
-                barcodes[key] = self.__lookupUPC(r.hgetall(key))
-                tally[key] = self.__sumRedisValues(r.hvals(key))
+                barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
+                tally[key] = self.__sumRedisValues(self.__r.hvals(key))
                 total += tally[key]
         return barcodes, tally, total
 
