@@ -79,7 +79,7 @@ class BarcodeProcessor:
     def __deleteRedisDB(self, scandate ):
         print( f'Deleting databases for {scandate}:' )
         count = 0
-        pipe = r.pipeline()
+        pipe = self.__r.pipeline()
         for key in self.__r.scan_iter(str(scandate) + '*'):
             print(f'\t{key}')
             pipe.delete(key)
