@@ -33,14 +33,14 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db, labelmaker='127.0.0.1'):
+    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db, labelmaker=''):
 
         self.orderdate='nodatefound'
         self.__cnx = None
         self.__mysql_setup(mysql_user,mysql_pass,mysql_db,mysql_ip,mysql_port)
 
-        self.labelmaker = None 
-        if labelmaker != '127.0.0.1':
+        self.labelmaker = None
+        if labelmaker:
             self.labelmaker = Label_Maker(ipaddress=labelmaker)
         
     def __mysql_setup(self, mysql_user, mysql_pass,mysql_db,mysql_ip,mysql_port=3306):
@@ -105,6 +105,7 @@ class arinvoice:
 
     def __itmdb_pricechange(self, orderdate, sku, price, name=''):
         cursor = self.__cnx.cursor(buffered=True)
+        badbarcode = False
 
         query = f'SELECT price, lastupdated, badbarcode FROM pricechangelist WHERE sku={sku}'
 
@@ -126,6 +127,8 @@ class arinvoice:
             self.__addtopricechangelist( orderdate, sku, price )
         self.__cnx.commit()
         cursor.close()
+
+        return bool(badbarcode)
 
     def __addlineitem(self, line, orderdate):
         cursor = self.__cnx.cursor(buffered=True)
@@ -183,7 +186,9 @@ class arinvoice:
 
         for row in rows:
             sku, price, name = row
-            self.__itmdb_pricechange( date, sku, price, name )
+            badbarcode = self.__itmdb_pricechange( date, sku, price, name )
+            if badbarcode and self.labelmaker:
+                self.labelmaker.printlabel(name,sku)
 
         cursor.close()
 
