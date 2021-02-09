@@ -12,6 +12,7 @@ __status__ = "Production"
 import toml
 import os
 import mysql
+import sys
 from mysql.connector import (connection)
 
 class dbupdater:
