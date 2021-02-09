@@ -14,12 +14,12 @@ ENV REDIS_IP=ldbredis
 ENV REDIS_PORT=6379
 
 RUN apt update && \
-    apt upgrade -y & \
+    apt upgrade -y && \
     apt install -y python3 \
 	python3-simplejson \
 	python3-dateutil \
 	python3-redis \
-        python3-mysql.connector \
+    python3-mysql.connector \
 	inotify-tools \
 	python3-toml
 
