@@ -17,7 +17,7 @@ from mysql.connector import (connection)
 
 class dbupdater:
 
-    debug = True
+    debug = False
 
     def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
         self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
@@ -28,7 +28,7 @@ class dbupdater:
     def __dbupdate(self, sku, key, value, table='invoicelog'):
         cursor = self.__cnx.cursor(buffered=True)
         query = f'UPDATE {table} SET {key}={value} WHERE sku={sku}'
-        if debug:
+        if self.debug:
             print(query)
         else:
             cursor.execute(query)
