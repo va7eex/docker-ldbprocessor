@@ -38,8 +38,10 @@ class dbupdater:
     def parse(self, filename):
         tomlstr = toml.load(filename)
         for k,v in tomlstr.items():
-            if v[0] == 'badbarcode':
-                self.__dbupdate(k, v[0], v[1], 'pricechangelist')
+            for m,n in v.items()
+                print(k, m, n)
+                if m == 'badbarcode':
+                    self.__dbupdate(k, m, n, 'pricechangelist')
 
 
 if __name__ == '__main__':
