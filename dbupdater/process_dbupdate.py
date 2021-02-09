@@ -12,6 +12,7 @@ __status__ = "Production"
 import toml
 import os
 import mysql
+from mysql.connector import (connection)
 
 class dbupdater:
 
@@ -36,7 +37,7 @@ class dbupdater:
     def parse(self, filename):
         tomlstr = toml.load(filename)
         for k,v in tomlstr.items():
-            if v[0] is 'badbarcode':
+            if v[0] == 'badbarcode':
                 self.__dbupdate(k, v[0], v[1], 'pricechangelist')
 
 

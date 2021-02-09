@@ -1,9 +1,9 @@
 #!/bin/bash
 #title           :monitor_file-for-bc-redis.sh
-#description     :Monitors a directory for appearance of a file called barcodes.csv, uses redis databases
+#description     :Monitors a directory for appearance of a file called update.toml
 #author          :David Rickett
 #date            :2020
-#usage           :bash monitor_file-for-bc-redis.sh
+#usage           :bash monitor_file-for-dbupdate.sh
 #notes           :Invoked by Docker Entrypoint command
 #bash_version    :Ubuntu LTS
 #==============================================================================
