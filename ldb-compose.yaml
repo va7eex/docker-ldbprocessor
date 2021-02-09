@@ -121,22 +121,26 @@ services:
 
   # Support containers
   ## Database Updater
-#  ldb_dbupdater:
-#    container_name: ldb_dbupdater
-#    build:
-#      context: dbupdater/
-#      dockerfile: Dockerfile
-#      args:
-#        - TZ=${TZ}
-#    user: "1002:1002"
-#    environment:
-#    volumes:
-#      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-#    restart: always
-#    networks:
-#      - ldbbackend
-#    depends_on:
-#      - ldb_database
+  ldb_dbupdater:
+    container_name: ldb_dbupdater
+    build:
+      context: dbupdater/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      - MYSQL_IP=ldb_Database
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    networks:
+      - ldbbackend
+    depends_on:
+      - ldb_database
   ## Network Label Maker API
 #  ldb_labelprinter:
 #    container_name: ldb_labelprinter
