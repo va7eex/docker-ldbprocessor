@@ -246,6 +246,6 @@ if __name__=='__main__':
         os.getenv('MYSQL_IP'),
         os.getenv('MYSQL_PORT'),
         os.getenv('MYSQL_DATABASE'),
-        os.getenv('LABELMAKER'))
+        os.getenv('LABEL_MAKER'))
     ari.processCSV(
         sys.argv[1])
