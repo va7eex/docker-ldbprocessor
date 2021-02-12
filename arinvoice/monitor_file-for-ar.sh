@@ -16,7 +16,7 @@ inotifywait -m $FILEPATH -e close_write -e moved_to |
         if [[ $file =~ XXARNEWINVOICE_[0-9]+_[0-9]+\.[Xx][Ll][Ss]$ ]]; then
 			echo 'found '$path$file
 			mv $path$file $path$file.bak
-			in2csv $path$file.bak > /tmp/"${file%.*}.csv"
+			in2csv --format xls $path$file.bak > /tmp/"${file%.*}.csv"
 			echo 'processing ARINVOICE'
 			python3 /usr/share/process_arinvoice.py \
 				/tmp/"${file%.*}.csv"
