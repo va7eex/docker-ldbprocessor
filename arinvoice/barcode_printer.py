@@ -36,7 +36,7 @@ class Label_Maker:
             zpl.add_field_origin(int(x_start+(c*x_offset)), int(y_start))
             zpl.add_field_data(text[:14])
             zpl.add_field_origin(int(x_start + x_offset+(c*x_offset)), int(y_start + y_offset*2.5))
-            bc = Code128_Barcode(barcode, 'N', 30, 'Y')
+            bc = Code128_Barcode(f'{barcode}', 'N', 30, 'Y')
             zpl.add_barcode(bc)
 
         zpl.add_print_quantity(int(quantity/self.columns))
