@@ -27,7 +27,7 @@ class dbupdater:
 
     def __dbupdate(self, sku, key, value, table='invoicelog'):
         cursor = self.__cnx.cursor(buffered=True)
-        query = f'UPDATE {table} SET {key}={value} WHERE sku={sku}'
+        query = f'UPDATE {table} SET {key}={value} WHERE sku={sku:08}'
         if self.debug:
             print(query)
         else:

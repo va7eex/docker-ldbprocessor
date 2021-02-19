@@ -61,7 +61,7 @@ class arinvoice:
     #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
         cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
             id INT NOT NULL AUTO_INCREMENT,
-            sku MEDIUMINT(6) ZEROFILL,
+            sku MEDIUMINT(8) ZEROFILL,
             productdescription VARCHAR(255),
             productcategory VARCHAR(255),
             size VARCHAR(20),
