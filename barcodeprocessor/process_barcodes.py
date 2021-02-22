@@ -141,11 +141,16 @@ class BarcodeProcessor:
         inventorytype='liquor'  #set the type of inventory scanned, by default this will be BC LDB Store 100
 
         with open(file) as f:
-            for line in f:
+            for line in reversed(f): #processing lines from bottom to top.
+            #for line in f: #just in case we need this later
                 line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
                 line = line.replace('\n','').split(',')
                 datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
-        #        print( datescanned )
+
+                #we are reversing the order of which things are processed
+                if int(datescanned) < latestscan:
+                    break
+
                 if( int(datescanned) > latestscan ):
                     if( latestscan > 0 ):
                         self.__deleteRedisDB(latestscan)
