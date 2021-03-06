@@ -90,6 +90,7 @@ services:
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - LABEL_MAKER=${LABEL_MAKER}
+      - PRICECHANGEIGNORE=${PRICECHANGEIGNORE}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
