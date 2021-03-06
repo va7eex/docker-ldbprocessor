@@ -86,15 +86,20 @@ class arinvoice:
     def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None):
         with open(f'{self.DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
             if bool(databaseprice):
+                #ignore price changes below a threshold
+                if abs(price-databaseprice)<os.getenv('PRICECHANGEIGNORE'): return
+
                 alert=''
                 if( (price - databaseprice)/ databaseprice > 0.1 ):
                     alert += '[pc>10%] '
+
                 if( price >= (databaseprice + 5) ):
                     alert += '[pc$5+] '
                 elif( price >= (databaseprice + 3) ):
                     alert += '[pc$3+] '
                 elif( price >= (databaseprice + 1) ):
                     alert += '[pc$1+] '
+
                 fp.write(f'{alert}{sku:06}: {databaseprice} changed to {price} (last updated {databasedate})\n')
             else:
                 fp.write(f'[NEW] {sku:06}: {price}\n')
@@ -150,16 +155,6 @@ class arinvoice:
         cursor.close()
 
 
-
-    def __checkforinvoicefile(self, overwritefile):
-        print(f'Checking for invoice file at {overwritefile}')
-
-        if os.path.exists(f'{self.DIRECTORY}/{overwritefile}'):
-            with open(f'{self.DIRECTORY}/{overwritefile}', 'w') as fp:
-                fp.write('')
-            print(f'{overwritefile} was found and cleared in preperation for new csv import.')
-
-
     def __printinvoicetofile(self, date):
         print(f'Printing invoice {date} to file')
 
@@ -170,10 +165,11 @@ class arinvoice:
 
         print('Total Rows: %s'%len(rows))
 
-        with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
-            for row in rows:
-                sku, unitprice, qty, productdescr, refnum = row
-                fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
+        if not os.path.exists(f'{self.DIRECTORY}/{date}_for-PO-import.txt'):
+            with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
+                for row in rows:
+                    sku, unitprice, qty, productdescr, refnum = row
+                    fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
 
         cursor.close()
 
@@ -215,7 +211,7 @@ class arinvoice:
                 if( append ):
                     imparsabledollaramount = self.DOLLARAMOUNT.search(line)
                     if( imparsabledollaramount is not None ):
-                        print( '!!! WARNING: comma in dollar amount !!! %s'%imparsabledollaramount.group() )
+                        print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}'' )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
                     line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
