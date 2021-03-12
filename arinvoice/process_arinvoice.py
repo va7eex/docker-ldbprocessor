@@ -211,7 +211,7 @@ class arinvoice:
                 if( append ):
                     imparsabledollaramount = self.DOLLARAMOUNT.search(line)
                     if( imparsabledollaramount is not None ):
-                        print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}'' )
+                        print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
                     line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
