@@ -141,8 +141,8 @@ class BarcodeProcessor:
         inventorytype='liquor'  #set the type of inventory scanned, by default this will be BC LDB Store 100
 
         with open(file) as f:
-            for line in reversed(f): #processing lines from bottom to top.
-            #for line in f: #just in case we need this later
+            #for line in reversed(f): #processing lines from bottom to top.
+            for line in f: #just in case we need this later
                 line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
                 line = line.replace('\n','').split(',')
                 datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
@@ -162,11 +162,11 @@ class BarcodeProcessor:
                     inventorytype='liquor'
 
                 #if theres some hideous scan error, you can start from the beginning or go back one
-                if( 'CLEARCLEARCLEAR' in line[3] ):
+                if( 'DELALL' in line[3] ):
                     self.__deleteRedisDB(latestscan)
                     forReview=[]
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
-                elif( 'CLEARLASTCLEAR' in line[3] ):
+                elif( 'DELLAST' in line[3] ):
                     if( previousline != None ):
                         self.__r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}',previousline,-1)
                 #allow other programs to act on type of scanned inventory
