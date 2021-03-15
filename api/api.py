@@ -23,7 +23,7 @@ redis_client = FlaskRedis(app)
 
 def __buildtables():
 
-    cur = mysql.get_db().cursor()
+    cur = mysql.connect().cursor()
 
     cur.execute('''CREATE TABLE IF NOT EXISTS iteminfolist
         (sku MEDIUMINT(8) ZEROFILL,
@@ -76,15 +76,16 @@ def hello_world():
 @app.route('/osr/getorder', methods=['GET','POST'])
 def __osr_getorder():
 
-
     ordernumber = escape(request.args.get('ordernumber',''))
 
-    cur = mysql.get_db().cursor()
-	query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
+    cur = mysql.connect().cursor()
+    query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
     try:
         cur.execute(query)
+    except:
+        pass
 
-    rows = cursor.fetchall()
+    rows = cur.fetchall()
     order = {}
     order[ordernumber] = {}
     for row in rows:
@@ -100,15 +101,15 @@ def __osr_getorder():
 @app.route('/osr/addlineitem', methods=['POST'])
 def __osr_addlineitem():
     
-    cur = mysql.get_db().cursor()
+    cur = mysql.connect().cursor()
+    pass
+    #li = lineitem(*line.split(','))
 
-    li = lineitem(*line.split(','))
-
-    query = f'''INSERT INTO orderlog (
-        ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
-        '''
-    try:
-        cur.execute(query)
+    #query = f'''INSERT INTO orderlog (
+    #    ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
+    #    '''
+    #try:
+    #    cur.execute(query)
 
 
 #
@@ -118,18 +119,18 @@ def __osr_addlineitem():
 @app.route('/ar/pricechange', methods=['GET','POST'])
 def __ar_pricechange():
 
-    cur = mysql.get_db().cursor()
+    cur = mysql.connect().cursor()
     if request.method == 'GET':
 
         date = escape(request.args.get('date',''))
         query = 'SELECT DISTINCT sku, suprice, productdescription FROM invoicelog WHERE invoicedate={date})'
         try:
             cur.execute(query)
+        except:
+            pass
 
         sku, suprice, proddescr = cur.fetchone()
         return {'sku': sku, 'suprice': suprice, 'prodescr': proddescr}
-
-        return result
 
     elif request.method == 'POST':
 
@@ -137,44 +138,43 @@ def __ar_pricechange():
         query = f'SELECT price, lastupdated, badbarcode FROM iteminfolist WHERE sku={sku}'
         try:
             cur.execute(query)
+        except:
+            pass
 
         price, lastupdated, badbarcode = cur.fetchone()
         return {'price': price, 'lastupdated': lastupdated, 'badbarcode': badbarcode}
-
-        return result
-
-        return
     pass
 
-@app.route('/ar/addlineitem', methods=['GET','POST'])
+@app.route('/ar/addlineitem', methods=['POST'])
 def __ar_addlineitem():
 
-    cur = mysql.get_db().cursor()
+    if request.method == 'POST':
+        cur = mysql.connect().cursor()
+        orderdate = escape(request.args.get('orderdate',''))
 
-
-    date = escape(request.args.get('date',''))
-
-    li = lineitem(*line.split(','))
-    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
-    pass
+        #li = lineitem(*line.split(','))
+        #query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+        pass
 
 @app.route('/ar/getinvoice', methods=['GET','POST'])
 def __ar_getinvoice():
 
-    cur = mysql.get_db().cursor()
+    cur = mysql.connect().cursor()
 
     date = escape(request.args.get('date',''))
     query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'"
     try:
         cur.execute(query)
+    except:
+        pass
 
     invoice = {}
-    rows = cursor.fetchall()
+    rows = cur.fetchall()
     print('Total Rows: %s'%len(rows))
 
     for row in rows:
         sku, unitprice, qty, productdescr, refnum = row
-        invoice[date] = { 'sku': sku, 'unitprice': unitprice, 'qty': productdescr, 'refnm', refnum}
+        invoice[f'{refnum}{sku}'] = {'sku': sku, 'unitprice': unitprice, 'qty': productdescr, 'refnm': refnum}
 
     return invoice
 
@@ -186,14 +186,14 @@ def __ar_getinvoice():
 def itemsearch():
     if request.method == 'GET':
         
-        cur = mysql.get_db().cursor()
+        cur = mysql.connect().cursor()
 
         search = escape(request.args.get('search',''))
 
         query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE sku={search} OR upc={search}'
-        try:
-            cur.execute(query)
+        cur.execute(query)
 
+        print()
         rows = cur.fetchall()
         if len(rows) == 0:
             return 'None'
@@ -205,5 +205,5 @@ def itemsearch():
 @app.route('/barcodeinput', methods=['POST'])
 def barcodeinput():
     if request.method == 'POST':
-        cur = mysql.get_db().cursor()
+        cur = mysql.connect().cursor()
         input = escape(request.args.get('bc'))
