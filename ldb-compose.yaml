@@ -142,6 +142,28 @@ services:
       - ldbbackend
     depends_on:
       - ldb_database
+
+  ldb_api:
+    container_name: ldb_api
+    build:
+      context: api/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      - FLASK_APP=api.py
+      - MYSQL_DATABASE_HOST=ldb_Database
+      - MYSQL_DATABASE_DB=${MYSQL_DATABASE}
+      - MYSQL_DATABASE_USER=${MYSQL_USER}
+      - MYSQL_DATABASE_PASSWORD=${MYSQL_PASSWORD}
+    restart: always
+    ports:
+      - 5000:5000
+    networks:
+      - ldbbackend
+    depends_on:
+      - ldb_database
   ## Network Label Maker API
 #  ldb_labelprinter:
 #    container_name: ldb_labelprinter

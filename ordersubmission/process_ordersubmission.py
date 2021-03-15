@@ -56,18 +56,6 @@ class OrderSubmissionReport:
 	def __mysql_table_setup(self):
 
 		cur = self.__cnx.cursor(buffered=True)
-		cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
-			id INT NOT NULL AUTO_INCREMENT,
-			sku MEDIUMINT(8) ZEROFILL,
-			upc BIGINT UNSIGNED,
-			productdescription VARCHAR(255),
-			sellingunitsize VARCHAR(32),
-			uom VARCHAR(20),
-			qty SMALLINT UNSIGNED,
-			orderdate INT(8) UNSIGNED,
-			ordernumber INT UNSIGNED,
-			thirdparty BOOL,
-			PRIMARY KEY (id))''')
 		self.__cnx.commit()
 		cur.close()
 
