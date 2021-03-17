@@ -1,4 +1,5 @@
 
+#!/bin/python3
 
 import os
 
@@ -8,6 +9,10 @@ from flaskext.mysql import MySQL
 from flask_redis import FlaskRedis
 
 from markupsafe import escape
+
+from BarcodePrinter import LabelMaker
+from LineItem import LineItemOS
+from LineItem import LineItemAR
 
 app = Flask(__name__)
 app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_HOST')
@@ -74,6 +79,8 @@ def hello_world():
 #
 
 @app.route('/osr/getorder', methods=['GET','POST'])
+@use_kwargs({'ordernumber', fields.Str()})
+@marshal_with
 def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
@@ -103,7 +110,7 @@ def __osr_addlineitem():
     
     cur = mysql.connect().cursor()
     pass
-    #li = lineitem(*line.split(','))
+    li = LineItemOS(*line.split(','))
 
     #query = f'''INSERT INTO orderlog (
     #    ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
@@ -152,7 +159,7 @@ def __ar_addlineitem():
         cur = mysql.connect().cursor()
         orderdate = escape(request.args.get('orderdate',''))
 
-        #li = lineitem(*line.split(','))
+        li = LineItemAR(*line.split(','))
         #query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
         pass
 
@@ -207,3 +214,22 @@ def barcodeinput():
     if request.method == 'POST':
         cur = mysql.connect().cursor()
         input = escape(request.args.get('bc'))
+
+#
+# Label Makers
+#
+
+@app.route('/labelmaker/print', methods=['GET','POST'])
+def __label_print():
+
+    labelmaker = None
+    if os.getenv('LABELMAKER_IP'):
+        labelmaker = Label_Maker(ipaddress=labelmaker)
+    else:
+        return 500
+
+    name = escape(request.args.get('name',''))
+    sku = escape(request.args.get('sku',''))
+
+    if badbarcode and self.labelmaker:
+        labelmaker.printlabel(name,sku)

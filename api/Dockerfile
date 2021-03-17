@@ -18,14 +18,14 @@ ENV LABEL_MAKER=127.0.0.1
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
      && date
 
+COPY requirements.txt ./
+
 RUN apt update \
     && apt upgrade -y \
     && apt install -y \
         python3 \
-        python3-pip \
-    	python3-simplejson \
-        python3-dateutil \
-    && pip3 install flask Flask-MySQL flask-redis
+        python3-pip\
+    && pip3 install -r requirements.txt
 
 COPY *.py ./
 

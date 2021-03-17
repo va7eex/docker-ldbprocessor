@@ -2,7 +2,7 @@ import re
 import sys
 from simple_zpl2 import ZPLDocument, Code128_Barcode, NetworkPrinter
 
-class Label_Maker:
+class LabelMaker:
 
     INCH=2.54
     

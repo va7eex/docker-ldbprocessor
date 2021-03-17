@@ -1,0 +1,7 @@
+schema
+flask
+Flask-MySQL
+flask-redis
+python-dateutil
+simplejson
+simple_zpl2

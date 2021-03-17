@@ -24,8 +24,7 @@ RUN apt update && \
 	python3-mysql.connector \
 	python3-redis \
 	inotify-tools \
-	csvkit && \
-	pip3 install simple_zpl2
+	csvkit
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
      && date

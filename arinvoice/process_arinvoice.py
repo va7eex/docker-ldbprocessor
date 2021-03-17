@@ -33,15 +33,11 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db, labelmaker=''):
+    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
 
         self.orderdate='nodatefound'
         self.__cnx = None
         self.__mysql_setup(mysql_user,mysql_pass,mysql_db,mysql_ip,mysql_port)
-
-        self.labelmaker = None
-        if labelmaker:
-            self.labelmaker = Label_Maker(ipaddress=labelmaker)
         
     def __mysql_setup(self, mysql_user, mysql_pass,mysql_db,mysql_ip,mysql_port=3306):
         self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
@@ -183,8 +179,6 @@ class arinvoice:
         for row in rows:
             sku, price, name = row
             badbarcode = self.__itmdb_pricechange( date, sku, price, name )
-            if badbarcode and self.labelmaker:
-                self.labelmaker.printlabel(name,sku)
 
         cursor.close()
 
