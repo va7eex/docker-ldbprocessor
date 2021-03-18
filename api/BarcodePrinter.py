@@ -10,7 +10,9 @@ class LabelMaker:
     DPI203 = 203
     DPI300 = 300
 
-    def __init__(self, ipaddress, metric=False, dpi=203, width=1, height=0.5, margins=(1/16), columns=2, fontsize=30):
+    def __init__(self, ipaddress: str, metric: bool = False, dpi: int = 203,
+                width: float = 1, height: float = 0.5, margins: float = (1/16),
+                columns: int = 2, fontsize: int = 30):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -21,7 +23,7 @@ class LabelMaker:
         self.metric=metric
         self.fontsize=fontsize
 
-    def printlabel(self, text, barcode, quantity=12):
+    def printlabel(self, text: str, barcode: str = '', quantity: int = 12):
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
@@ -39,7 +41,7 @@ class LabelMaker:
             bc = Code128_Barcode(f'{barcode}', 'N', 30, 'Y')
             zpl.add_barcode(bc)
 
-        zpl.add_print_quantity(int(quantity/self.columns))
+        zpl.add_print_quantity(int(int(quantity)/self.columns))
         
         printer = NetworkPrinter(self.ipaddress)
         printer.print_zpl(zpl)

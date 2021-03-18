@@ -27,6 +27,30 @@ services:
     networks:
       - ldbbackend
 
+  # API
+  ldb_api:
+    container_name: ldb_api
+    build:
+      context: api/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      - FLASK_APP=api.py
+      - MYSQL_DATABASE_HOST=ldb_Database
+      - MYSQL_DATABASE_DB=${MYSQL_DATABASE}
+      - MYSQL_DATABASE_USER=${MYSQL_USER}
+      - MYSQL_DATABASE_PASSWORD=${MYSQL_PASSWORD}
+    restart: always
+    ports:
+      - 5000:5000
+    networks:
+      - ldbbackend
+    depends_on:
+      - ldb_redis
+      - ldb_database
+
   #apps, will build to order
   ## Barcode processor
   ldb_processor_bc:
@@ -38,17 +62,12 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldb_redis
-      - MYSQL_IP=ldb_Database
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - API_URL=ldb_api
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
-      - ldb_redis
-      - ldb_database
+      - ldb_api
     networks:
       - ldbbackend
   ## Order Submission Processor
@@ -61,17 +80,12 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldb_redis
-      - MYSQL_IP=ldb_Database
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - API_URL=ldb_api
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
-      - ldb_redis
-      - ldb_database
+      - ldb_api
     networks:
       - ldbbackend
   ## ARInvoice Processor
@@ -84,19 +98,13 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - REDIS_IP=ldb_redis
-      - MYSQL_IP=ldb_Database
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - LABEL_MAKER=${LABEL_MAKER}
+      - API_URL=ldb_api
       - PRICECHANGEIGNORE=${PRICECHANGEIGNORE}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
-      - ldb_redis
-      - ldb_database
+      - ldb_api
     networks:
       - ldbbackend
   ## IMAP downloader
@@ -120,62 +128,5 @@ services:
       - ldb_processor_ar
       - ldb_processor_os
 
-  # Support containers
-  ## Database Updater
-  ldb_dbupdater:
-    container_name: ldb_dbupdater
-    build:
-      context: dbupdater/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    user: "1002:1002"
-    environment:
-      - MYSQL_IP=ldb_Database
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-    restart: always
-    networks:
-      - ldbbackend
-    depends_on:
-      - ldb_database
-
-  ldb_api:
-    container_name: ldb_api
-    build:
-      context: api/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    user: "1002:1002"
-    environment:
-      - FLASK_APP=api.py
-      - MYSQL_DATABASE_HOST=ldb_Database
-      - MYSQL_DATABASE_DB=${MYSQL_DATABASE}
-      - MYSQL_DATABASE_USER=${MYSQL_USER}
-      - MYSQL_DATABASE_PASSWORD=${MYSQL_PASSWORD}
-    restart: always
-    ports:
-      - 5000:5000
-    networks:
-      - ldbbackend
-    depends_on:
-      - ldb_database
-  ## Network Label Maker API
-#  ldb_labelprinter:
-#    container_name: ldb_labelprinter
-#    build:
-#      context: labelmaker/
-#      dockerfile: Dockerfile
-#      args:
-#        - TZ=${TZ}
-#    environment:
-#      - PRINTER_IP=${PRINTER_IP}
-#    restart: always
-#    networks:
-#      - ldbbackend
 networks:
   ldbbackend:
