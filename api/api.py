@@ -101,11 +101,8 @@ def __bc_get():
 #
 
 @app.route('/osr/getorder', methods=['GET','POST'])
-<<<<<<< Updated upstream
 @use_kwargs({'ordernumber': fields.Str()})
-=======
-@use_kwargs({'ordernumber', fields.Str()})
->>>>>>> Stashed changes
+>>>>>>> e0720cfd7d517d4e64d3faf5ac0045413b63e492
 def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
@@ -285,17 +282,8 @@ def __label_print():
     else:
         return 500
 
-<<<<<<< Updated upstream
     name = escape(request.args.get('name',''))
     sku = escape(request.args.get('sku',''))
     quantity = Schema(int).validate(escape(request.args.get('sku',12)))
 
-    if badbarcode and self.labelmaker:
-        labelmaker.printlabel(name,sku,quantity)
-=======
-    name = escape(request.args.get('text',''))
-    sku = escape(request.args.get('barcode',''))
-    quantity = escape(request.args.get('quantity',12))
-
     labelmaker.printlabel(name,sku,quantity)
->>>>>>> Stashed changes
