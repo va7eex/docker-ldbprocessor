@@ -6,6 +6,7 @@ import os
 from flask import Flask
 from flask import request
 from flaskext.mysql import MySQL
+from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
 
 from markupsafe import escape
@@ -20,7 +21,7 @@ app.config['MYSQL_DATABASE_PORT'] = int(os.getenv('MYSQL_PORT'))
 app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_DATABASE_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
 app.config['MYSQL_DATABASE_DB'] = os.getenv('MYSQL_DB')
-mysql = MySQL()
+mysql = MySQL(cursorclass=DictCursor)
 mysql.init_app(app)
 
 REDIS_URL = f'redis://{os.getenv("REDIS_IP")}:{os.getenv("REDIS_PORT")}/0'
@@ -70,6 +71,8 @@ def __buildtables():
         PRIMARY KEY (id))''')
     cur.close()
 
+__buildtables()
+
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
@@ -79,8 +82,7 @@ def hello_world():
 #
 
 @app.route('/osr/getorder', methods=['GET','POST'])
-@use_kwargs({'ordernumber', fields.Str()})
-@marshal_with
+@use_kwargs({'ordernumber': fields.Str()})
 def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
@@ -96,12 +98,12 @@ def __osr_getorder():
     order = {}
     order[ordernumber] = {}
     for row in rows:
-        sku, upc, qty, productdescription = row
-        order[ordernumber][f'{sku:06}'] = {}
-        order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
-        order[ordernumber][f'{sku:06}']['upc'] = upc
-        order[ordernumber][f'{sku:06}']['qty'] = qty
-        order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
+    #    sku, upc, qty, productdescription = row
+        order[ordernumber][f'{sku:06}'] = row
+        #order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
+        #order[ordernumber][f'{sku:06}']['upc'] = upc
+        #order[ordernumber][f'{sku:06}']['qty'] = qty
+        #order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
 
     return order
 
@@ -124,10 +126,11 @@ def __osr_addlineitem():
 #
 
 @app.route('/ar/pricechange', methods=['GET','POST'])
+@use_kwargs({'sku': fields.Str()})
 def __ar_pricechange():
 
     cur = mysql.connect().cursor()
-    if request.method == 'GET':
+    if request.method == 'POST':
 
         date = escape(request.args.get('date',''))
         query = 'SELECT DISTINCT sku, suprice, productdescription FROM invoicelog WHERE invoicedate={date})'
@@ -136,10 +139,11 @@ def __ar_pricechange():
         except:
             pass
 
-        sku, suprice, proddescr = cur.fetchone()
-        return {'sku': sku, 'suprice': suprice, 'prodescr': proddescr}
+        return cur.fetchone()
+        #sku, suprice, proddescr = cur.fetchone()
+        #return {'sku': sku, 'suprice': suprice, 'prodescr': proddescr}
 
-    elif request.method == 'POST':
+    elif request.method == 'GET':
 
         sku = escape(request.args.get('sku',''))
         query = f'SELECT price, lastupdated, badbarcode FROM iteminfolist WHERE sku={sku}'
@@ -148,28 +152,57 @@ def __ar_pricechange():
         except:
             pass
 
-        price, lastupdated, badbarcode = cur.fetchone()
-        return {'price': price, 'lastupdated': lastupdated, 'badbarcode': badbarcode}
+        return cur.fetchone()
+        #price, lastupdated, badbarcode = cur.fetchone()
+        #return {'price': price, 'lastupdated': lastupdated, 'badbarcode': badbarcode}
     pass
 
-@app.route('/ar/addlineitem', methods=['POST'])
-def __ar_addlineitem():
+@app.route('/ar/getitem',methods=['GET','POST'])
+@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
+def __ar_getitem():
+    
+    cur = mysql.connect().cursor()
+    sku = escape(request.args.get('sku',''))
+    all = escape(request.args.get('all', False))
 
-    if request.method == 'POST':
-        cur = mysql.connect().cursor()
-        orderdate = escape(request.args.get('orderdate',''))
-
-        li = LineItemAR(*line.split(','))
-        #query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+    query = f'GET * FROM invoicelog WHERE sku={sku} ORDERBY id DESC'
+    try:
+        cur.execute(query)
+    except:
         pass
 
+    if all:
+        return cur.fetchall()
+    else:
+        return cur.fetchone()
+
+
+@app.route('/ar/addlineitem', methods=['POST'])
+@use_kwargs({'orderdate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
+def __ar_addlineitem():
+
+    cur = mysql.connect().cursor()
+    orderdate = escape(request.args.get('orderdate',''))
+    rawdata = escape(request.args.get('raw', False))
+    data = escape(request.args.get('data',''))
+
+    li = None
+    if rawdata:
+        li = LineItemAR(linestring=data)
+    else:
+        li = LineItemAR(request.args)
+        
+    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+    return query
+
 @app.route('/ar/getinvoice', methods=['GET','POST'])
+@use_kwargs({'invoicedate': fields.Str()})
 def __ar_getinvoice():
 
     cur = mysql.connect().cursor()
 
-    date = escape(request.args.get('date',''))
-    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'"
+    invoicedate = escape(request.args.get('invoicedate',''))
+    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
     try:
         cur.execute(query)
     except:
@@ -220,6 +253,7 @@ def barcodeinput():
 #
 
 @app.route('/labelmaker/print', methods=['GET','POST'])
+@use_kwargs({'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
 def __label_print():
 
     labelmaker = None
@@ -230,6 +264,7 @@ def __label_print():
 
     name = escape(request.args.get('name',''))
     sku = escape(request.args.get('sku',''))
+    quantity = Schema(int).validate(escape(request.args.get('sku',12)))
 
     if badbarcode and self.labelmaker:
-        labelmaker.printlabel(name,sku)
+        labelmaker.printlabel(name,sku,quantity)

@@ -6,7 +6,6 @@ class LineItem:
     self.schema = Schema(None)
 
     def __init__(self, *vars, linestring='', **kwargs):
-
         pass
 
     def __len__(self):
@@ -34,7 +33,7 @@ class LineItem:
         return retstr[:-1]
 
     def getall(self):
-        return self.details
+        return self.schema.validate(self.details)
 
     def get(self, key):
         return self.details[key]
@@ -43,7 +42,10 @@ class LineItemAR(LineItem):
 
     def __init__(self, *vars, linestring='', **kwargs):
 
-        self.schema = Schema()
+        self.schema = Schema({'sku': int, 'productdescription': str, 'productcategory': str,
+                              'size': str, 'qty': int, 'uom': str, 'priceperuom': float,
+                              'extendedprice': float, 'suquantity': int, 'suprice': float,
+                              'wppsavings': float, 'contdeposit': float, 'refnum': int})
 
         if isinstance(vars, tuple):
             vars = list(vars)
@@ -85,6 +87,9 @@ class LineItemOS(LineItem):
 
     def __init__(self, *vars, linestring='', **kwargs):
 
+        self.schema = Schema({'sku': int, 'upc': int, 'productdescription': str,
+                              'sellingunitsize': str, 'uom': str, 'qty': int})
+
         if isinstance(vars, tuple):
             vars = list(vars)
 
@@ -104,7 +109,7 @@ class LineItemOS(LineItem):
         self.details['upc']             = int(vars.pop(0)   or kwargs.get('upc',-1))                    #int
         self.details['productdescription']        = (vars.pop(0)   or kwargs.get('productdescription',"default value"))  #str
         if len(vars) > 3:              #if there are more list members than there should be, assume some numpty at LDB put a comma in an item name.
-            self.details['proddesc']    += vars.pop(0)
+            self.details['productdescription']    += vars.pop(0)
         self.details['sellingunitsize'] = (vars.pop(0)   or kwargs.get('sellingunitsize',"default value"))   #str
         self.details['uom']             = (vars.pop(0)   or kwargs.get('uom',"default value"))       #str
         self.details['qty']             = int(float(vars.pop(0)   or kwargs.get('qty',0)))                     #int
