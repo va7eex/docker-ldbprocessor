@@ -10,7 +10,7 @@ class LabelMaker:
     DPI203 = 203
     DPI300 = 300
 
-    def __init__(self, ipaddress: str, metric: bool = False, dpi: int = 203,
+    def __init__(self, ipaddress: str, port: int = 9100, metric: bool = False, dpi: int = 203,
                 width: float = 1, height: float = 0.5, margins: float = (1/16),
                 columns: int = 2, fontsize: int = 30):
         #note: we're defaulting to uline S-10765 dimensions
@@ -18,6 +18,7 @@ class LabelMaker:
         self.width = width
         self.margins = margins
         self.ipaddress = ipaddress
+        self.port = port
         self.dpi = dpi
         self.columns = columns
         self.metric=metric
@@ -43,7 +44,7 @@ class LabelMaker:
 
         zpl.add_print_quantity(int(int(quantity)/self.columns))
         
-        printer = NetworkPrinter(self.ipaddress)
+        printer = NetworkPrinter(self.ipaddress,self.port)
         printer.print_zpl(zpl)
 
 if __name__=='__main__':

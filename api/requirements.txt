@@ -6,3 +6,4 @@ python-dateutil
 simplejson
 simple_zpl2
 PyMySQL
+Pillow

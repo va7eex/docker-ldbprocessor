@@ -9,6 +9,8 @@ from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
 
+from schema import Schema, And, Use, Optional, SchemaError
+
 from markupsafe import escape
 
 from BarcodePrinter import LabelMaker
@@ -101,8 +103,7 @@ def __bc_get():
 #
 
 @app.route('/osr/getorder', methods=['GET','POST'])
-@use_kwargs({'ordernumber': fields.Str()})
->>>>>>> e0720cfd7d517d4e64d3faf5ac0045413b63e492
+#@use_kwargs({'ordernumber': fields.Str()})
 def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
@@ -146,7 +147,7 @@ def __osr_addlineitem():
 #
 
 @app.route('/ar/pricechange', methods=['GET','POST'])
-@use_kwargs({'sku': fields.Str()})
+#@use_kwargs({'sku': fields.Str()})
 def __ar_pricechange():
 
     cur = mysql.connect().cursor()
@@ -178,45 +179,54 @@ def __ar_pricechange():
     pass
 
 @app.route('/ar/getitem',methods=['GET','POST'])
-@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
+#@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
 def __ar_getitem():
     
     cur = mysql.connect().cursor()
     sku = escape(request.args.get('sku',''))
-    all = escape(request.args.get('all', False))
+    allitems = escape(request.args.get('all','false'))
+    startdate = escape(request.args.get('startdate',''))
+    enddate = escape(request.args.get('enddate',''))
 
-    query = f'GET * FROM invoicelog WHERE sku={sku} ORDERBY id DESC'
-    try:
-        cur.execute(query)
-    except:
-        pass
+    query = f'SELECT * FROM invoicelog WHERE sku={sku}'
+    if startdate:
+        query += f' AND invoicedate >= \'{startdate}\''
+    if enddate:
+        query += f' AND invoicedate <= \'{enddate}\''
+    query += ' ORDER BY invoicedate DESC'
+    if not allitems.lower() == 'true' or not (startdate or enddate):
+        query += ' LIMIT 1'
+    print(query)
 
-    if all:
-        return cur.fetchall()
-    else:
-        return cur.fetchone()
+    cur.execute(query)
+    rows = cur.fetchall()
+
+    returnrows = {}
+    for row in range(len(rows)):
+        returnrows[row] = rows.pop(0)
+    return returnrows
 
 
 @app.route('/ar/addlineitem', methods=['POST'])
-@use_kwargs({'orderdate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
+#@use_kwargs({'orderdate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
 def __ar_addlineitem():
 
     cur = mysql.connect().cursor()
     orderdate = escape(request.args.get('orderdate',''))
-    rawdata = escape(request.args.get('raw', False))
+    rawdata = escape(request.args.get('rawdata', ''))
     data = escape(request.args.get('data',''))
-
+    print(*request.args.keys())
     li = None
-    if rawdata:
+    if False:
         li = LineItemAR(linestring=data)
     else:
-        li = LineItemAR(request.args)
-        
+        li = LineItemAR(**request.args)
+
     query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
     return query
 
 @app.route('/ar/getinvoice', methods=['GET','POST'])
-@use_kwargs({'invoicedate': fields.Str()})
+#@use_kwargs({'invoicedate': fields.Str()})
 def __ar_getinvoice():
 
     cur = mysql.connect().cursor()
@@ -232,9 +242,8 @@ def __ar_getinvoice():
     rows = cur.fetchall()
     print('Total Rows: %s'%len(rows))
 
-    for row in rows:
-        sku, unitprice, qty, productdescr, refnum = row
-        invoice[f'{refnum}{sku}'] = {'sku': sku, 'unitprice': unitprice, 'qty': productdescr, 'refnm': refnum}
+    for row in range(len(rows)):
+        invoice[row] = rows.pop(0)
 
     return invoice
 
@@ -258,9 +267,10 @@ def itemsearch():
         if len(rows) == 0:
             return 'None'
 
-        sku, upc, qty, productdescription = rows[len(rows)-1]
+        return rows[len(rows)-1]
+        #sku, upc, qty, productdescription = rows[len(rows)-1]
 
-        return {'sku': sku, 'upc':upc, 'productdescription': productdescription}
+        #return {'sku': sku, 'upc':upc, 'productdescription': productdescription}
 
 @app.route('/barcodeinput', methods=['POST'])
 def barcodeinput():
@@ -273,17 +283,22 @@ def barcodeinput():
 #
 
 @app.route('/labelmaker/print', methods=['GET','POST'])
-@use_kwargs({'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
+#@use_kwargs({'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
 def __label_print():
 
     labelmaker = None
-    if os.getenv('LABELMAKER_IP'):
-        labelmaker = Label_Maker(ipaddress=labelmaker)
+    if os.getenv('LABEL_MAKER'):
+        labelmaker = LabelMaker(ipaddress=os.getenv('LABEL_MAKER'))
     else:
-        return 500
+        return {'success': False, 'reason': 'No IP address on file'}
 
     name = escape(request.args.get('name',''))
     sku = escape(request.args.get('sku',''))
-    quantity = Schema(int).validate(escape(request.args.get('sku',12)))
+    try:
+        quantity = int(escape(request.args.get('qty',12)))
+    except:
+        return {'success': False, 'reason': '\'qty\' not a number'}
 
     labelmaker.printlabel(name,sku,quantity)
+
+    return {'Success': True, 'name': name, 'sku': sku, 'qty': qty }

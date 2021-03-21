@@ -3,9 +3,8 @@ from schema import Schema, And, Use, Optional, SchemaError
 
 class LineItem:
 
-    self.schema = Schema(None)
-
-    def __init__(self, *vars, linestring='', **kwargs):
+    def __init__(self, linestring='', *vars, **kwargs):
+        self.schema = Schema(None)
         pass
 
     def __len__(self):
@@ -40,7 +39,7 @@ class LineItem:
 
 class LineItemAR(LineItem):
 
-    def __init__(self, *vars, linestring='', **kwargs):
+    def __init__(self, linestring='', *vars, **kwargs):
 
         self.schema = Schema({'sku': int, 'productdescription': str, 'productcategory': str,
                               'size': str, 'qty': int, 'uom': str, 'priceperuom': float,
@@ -53,28 +52,29 @@ class LineItemAR(LineItem):
         if vars is None and len(linestring) > 0 and type(linestring) == str:
             vars = linestring.split(',')
 
-        #if vars is not none and doesn't match our expected data, throw exception
-        if vars is not None and len(vars) < 13:
-            raise Exception()
+        #print(vars, len(vars))
 
-        print(vars, len(vars))
+        #if vars is not none and doesn't match our expected data, throw exception
+        #if vars is not None and len(vars) < 13:
+        #    raise Exception()
+
 
         self.details = {}
-        self.details['sku']             = int(vars.pop(0)   or kwargs.get('sku',-1))                    #int
-        self.details['productdescription']        = (vars.pop(0)   or kwargs.get('productdescription',"default value"))  #str
-        if len(vars) > 11:              #if there are more list members than there should be, assume some numpty at LDB put a comma in an item name.
-            self.details['productdescription']    += vars.pop(0)
-        self.details['productcategory']         = (vars.pop(0)   or kwargs.get('productcategory',"default value"))   #str
-        self.details['size']            = (vars.pop(0)   or kwargs.get('size',"default value"))      #str
-        self.details['qty']             = int(float(vars.pop(0)   or kwargs.get('qty',0)))                     #int
-        self.details['uom']             = (vars.pop(0)   or kwargs.get('uom',"default value"))       #str
-        self.details['priceperuom']     = float(vars.pop(0) or kwargs.get('priceperuom',0.0))           #float
-        self.details['extendedprice']        = float(vars.pop(0) or kwargs.get('extendedprice',0.0))              #float
-        self.details['suquantity']      = int(float(vars.pop(0)   or kwargs.get('suquantity',0)))              #int unsigned
-        self.details['suprice']         = float(vars.pop(0) or kwargs.get('suprice',0.0))               #float
-        self.details['wppsavings']            = float(vars.pop(0) or kwargs.get('wppsavings',0.0))                  #float
-        self.details['contdeposit']           = float(vars.pop(0) or kwargs.get('contdeposit',0.0))                 #float
-        self.details['refnum']             = int(float(vars.pop(0)   or kwargs.get('refnum',-1)))                    #int
+        self.details['sku']             = int(kwargs.get('sku',-1))                   #int
+        self.details['productdescription']        = kwargs.get('productdescription',"default value")  #str
+        #if len(vars) > 11:              #if there are more list members than there should be, assume some numpty at LDB put a comma in an item name.
+        #    self.details['productdescription']    += vars.pop(0)
+        self.details['productcategory']         = kwargs.get('productcategory',"default value")   #str
+        self.details['size']            = kwargs.get('size',"default value")     #str
+        self.details['qty']             = int(float(kwargs.get('qty',0)))                     #int
+        self.details['uom']             = kwargs.get('uom',"default value")       #str
+        self.details['priceperuom']     = float(kwargs.get('priceperuom',0.0))           #float
+        self.details['extendedprice']        = float(kwargs.get('extendedprice',0.0))              #float
+        self.details['suquantity']      = int(float(kwargs.get('suquantity',0)))              #int unsigned
+        self.details['suprice']         = float(kwargs.get('suprice',0.0))               #float
+        self.details['wppsavings']            = float(kwargs.get('wppsavings',0.0))                  #float
+        self.details['contdeposit']           = float(kwargs.get('contdeposit',0.0))                 #float
+        self.details['refnum']             = int(float(kwargs.get('refnum',-1)))                    #int
 
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
@@ -85,7 +85,7 @@ class LineItemAR(LineItem):
 
 class LineItemOS(LineItem):
 
-    def __init__(self, *vars, linestring='', **kwargs):
+    def __init__(self, linestring='', *vars, **kwargs):
 
         self.schema = Schema({'sku': int, 'upc': int, 'productdescription': str,
                               'sellingunitsize': str, 'uom': str, 'qty': int})
