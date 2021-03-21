@@ -87,7 +87,7 @@ class arinvoice:
         with open(f'{self.DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
             if bool(databaseprice):
                 #ignore price changes below a threshold
-                if abs(price-databaseprice)<os.getenv('PRICECHANGEIGNORE'): return
+                if abs(price-databaseprice)<float(os.getenv('PRICECHANGEIGNORE')): return
 
                 alert=''
                 if( (price - databaseprice)/ databaseprice > 0.1 ):
