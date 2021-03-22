@@ -217,10 +217,10 @@ def __ar_addlineitem():
     data = escape(request.args.get('data',''))
     print(*request.args.keys())
     li = None
-    if False:
+    if rawdata:
         li = LineItemAR(linestring=data)
     else:
-        li = LineItemAR(**request.args)
+        li = LineItemAR(*data.split(','))
 
     query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
     return query
@@ -232,6 +232,11 @@ def __ar_getinvoice():
     cur = mysql.connect().cursor()
 
     invoicedate = escape(request.args.get('invoicedate',''))
+    year = escape(request.args.get('year',''))
+    month = escape(request.args.get('month',''))
+    day = escape(request.args.get('day',''))
+    if not invoicedate and year and month and day:
+        invoicedate = f'{year}-{month}-{day}'
     query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
     try:
         cur.execute(query)
@@ -246,6 +251,47 @@ def __ar_getinvoice():
         invoice[row] = rows.pop(0)
 
     return invoice
+
+@app.route('/ar/findbadbarcodes', methods=['GET','POST'])
+def __ar_findbadbarcodes():
+
+    cur = mysql.connect().cursor()
+
+    orderdate = escape(request.args.get('orderdate',''))
+
+    #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
+    query = f'SELECT invoicelog.sku, invoicelog.productdescription FROM invoicelog, pricechangelist WHERE invoicelog.invoicedate=\'{orderdate}\' AND invoicelog.sku=pricechangelist.sku AND pricechangelist.badbarcode=1'
+    cur.execute(query)
+
+    rows = cur.fetchall()
+    data = {}
+    for row in range(len(rows)):
+        data[row] = rows.pop(0)
+
+    return data
+
+#
+# Misc
+#
+
+@app.route('/misc/badbarcode', methods=['GET','POST'])
+def __misc_badbarcode():
+
+    cur = mysql.connect().cursor()
+
+    sku = escape(request.args.get('sku',''))
+    badbarcode = escape(request.args.get('badbarcode',''))
+
+    if badbarcode and request.method == 'POST':
+        query = f'UPDATE badbarcode={badbarcode} WHERE sku={sku} IN inteminfolist'
+        cur.execute(query)
+
+    query = f'SELECT sku, badbarcode IN iteminfolist WHERE sku={sku}'
+    cur.execute(query)
+
+    return cur.fetchone()
+
+
 
 #
 # GUI
