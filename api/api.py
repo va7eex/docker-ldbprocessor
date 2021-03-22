@@ -18,7 +18,7 @@ from LineItem import LineItemOS
 from LineItem import LineItemAR
 
 app = Flask(__name__)
-app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_HOST')
+app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_IP')
 app.config['MYSQL_DATABASE_PORT'] = int(os.getenv('MYSQL_PORT'))
 app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_DATABASE_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
@@ -37,7 +37,8 @@ def __buildtables():
         (sku MEDIUMINT(8) ZEROFILL,
         price FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
-        lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)''')
+        lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (sku))''')
 
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
     #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
@@ -110,36 +111,35 @@ def __osr_getorder():
 
     cur = mysql.connect().cursor()
     query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
-    try:
-        cur.execute(query)
-    except:
-        pass
+    cur.execute(query)
 
     rows = cur.fetchall()
     order = {}
     order[ordernumber] = {}
     for row in rows:
     #    sku, upc, qty, productdescription = row
-        order[ordernumber][f'{sku:06}'] = row
-        #order[ordernumber][f'{sku:06}']['sku'] = f'{sku:06}'
-        #order[ordernumber][f'{sku:06}']['upc'] = upc
-        #order[ordernumber][f'{sku:06}']['qty'] = qty
-        #order[ordernumber][f'{sku:06}']['productdescription'] = productdescription
+        order[ordernumber][row['sku']] = row
 
     return order
 
+#TODO
 @app.route('/osr/addlineitem', methods=['POST'])
 def __osr_addlineitem():
     
     cur = mysql.connect().cursor()
-    pass
-    li = LineItemOS(*line.split(','))
+    ordnum = escape(request.args.get('ordnum',''))
+    orddate = escape(request.args.get('orddate',''))
+    thirdparty = escape(request.args.get('thirdparty',''))
+    restofrequest = request.form.to_dict(flat=True)
+    li = LineItemOS(**restofrequest)
 
-    #query = f'''INSERT INTO orderlog (
-    #    ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
-    #    '''
-    #try:
-    #    cur.execute(query)
+
+    query = f'''INSERT INTO orderlog (
+        ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
+        '''
+    cur.execute(query)
+
+    return li.getall()
 
 
 #
@@ -151,32 +151,44 @@ def __osr_addlineitem():
 def __ar_pricechange():
 
     cur = mysql.connect().cursor()
+    invoicedate = escape(request.args.get('invoicedate',''))
+
     if request.method == 'POST':
 
-        date = escape(request.args.get('date',''))
-        query = 'SELECT DISTINCT sku, suprice, productdescription FROM invoicelog WHERE invoicedate={date})'
-        try:
-            cur.execute(query)
-        except:
-            pass
+        sku = escape(request.form.get('sku','0'))
+        price = escape(request.form.get('price','0.0'))
+        query = f'SELECT * FROM iteminfolist WHERE sku={sku}'
+        cur.execute(query)
+        newitem = False
+        print(len(cur.fetchall))
+        if len(cur.fetchall()) == 0:
+            newitem = True
 
-        return cur.fetchone()
-        #sku, suprice, proddescr = cur.fetchone()
-        #return {'sku': sku, 'suprice': suprice, 'prodescr': proddescr}
+        query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}'
+        cur.execute(query)
 
-    elif request.method == 'GET':
+        mysql.connect().commit()
 
-        sku = escape(request.args.get('sku',''))
-        query = f'SELECT price, lastupdated, badbarcode FROM iteminfolist WHERE sku={sku}'
-        try:
-            cur.execute(query)
-        except:
-            pass
+        return {'newitem': newitem, 'sku': sku, 'price': price}
 
-        return cur.fetchone()
-        #price, lastupdated, badbarcode = cur.fetchone()
-        #return {'price': price, 'lastupdated': lastupdated, 'badbarcode': badbarcode}
-    pass
+        # query = f'GET * FROM iteminfolist WHERE sku={sku}'
+        # cur.execute(query)
+
+        # return cur.fetchone()
+
+
+    #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
+    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND invoicelog.suprice!=iteminfolist.price AND invoicelog.sku=iteminfolist.sku'
+    print(query)
+    
+    cur.execute(query)
+
+    rows = cur.fetchall()
+    returnrows = {}
+    for row in range(len(rows)):
+        returnrows[row] = rows.pop(0)
+    return returnrows
+
 
 @app.route('/ar/getitem',methods=['GET','POST'])
 #@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
@@ -212,20 +224,14 @@ def __ar_getitem():
 def __ar_addlineitem():
 
     cur = mysql.connect().cursor()
-    orderdate = escape(request.args.get('orderdate',''))
-    rawdata = escape(request.args.get('rawdata', ''))
-    data = escape(request.args.get('data',''))
-    print(*request.args.keys())
-    li = None
-    if rawdata:
-        li = LineItemAR(linestring=data)
-    else:
-        li = LineItemAR(*data.split(','))
+    orderdate = escape(request.form.get('orderdate',''))
+    restofrequest = request.form.to_dict(flat=True)
+    li = LineItemAR(**restofrequest)
 
     query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
     return query
 
-@app.route('/ar/getinvoice', methods=['GET','POST'])
+@app.route('/ar/getinvoice', methods=['GET'])
 #@use_kwargs({'invoicedate': fields.Str()})
 def __ar_getinvoice():
 
@@ -235,13 +241,12 @@ def __ar_getinvoice():
     year = escape(request.args.get('year',''))
     month = escape(request.args.get('month',''))
     day = escape(request.args.get('day',''))
+
     if not invoicedate and year and month and day:
         invoicedate = f'{year}-{month}-{day}'
+
     query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
-    try:
-        cur.execute(query)
-    except:
-        pass
+    cur.execute(query)
 
     invoice = {}
     rows = cur.fetchall()
@@ -252,7 +257,7 @@ def __ar_getinvoice():
 
     return invoice
 
-@app.route('/ar/findbadbarcodes', methods=['GET','POST'])
+@app.route('/ar/findbadbarcodes', methods=['GET'])
 def __ar_findbadbarcodes():
 
     cur = mysql.connect().cursor()
@@ -278,13 +283,15 @@ def __ar_findbadbarcodes():
 def __misc_badbarcode():
 
     cur = mysql.connect().cursor()
+    if request.method == 'POST':
+        sku = escape(request.form.get('sku',''))
+        badbarcode = escape(request.form.get('badbarcode',0))
+        
+        query = f'UPDATE badbarcode={badbarcode} WHERE sku={sku} IN iteminfolist'
+        cur.execute(query)
+        mysql.connect().commit()
 
     sku = escape(request.args.get('sku',''))
-    badbarcode = escape(request.args.get('badbarcode',''))
-
-    if badbarcode and request.method == 'POST':
-        query = f'UPDATE badbarcode={badbarcode} WHERE sku={sku} IN inteminfolist'
-        cur.execute(query)
 
     query = f'SELECT sku, badbarcode IN iteminfolist WHERE sku={sku}'
     cur.execute(query)
@@ -328,7 +335,7 @@ def barcodeinput():
 # Label Makers
 #
 
-@app.route('/labelmaker/print', methods=['GET','POST'])
+@app.route('/labelmaker/print', methods=['GET'])
 #@use_kwargs({'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
 def __label_print():
 
@@ -339,6 +346,9 @@ def __label_print():
         return {'success': False, 'reason': 'No IP address on file'}
 
     name = escape(request.args.get('name',''))
+    productdescription = escape(request.args.get('productdescription',''))
+    if not name and productdescription:
+        name = productdescription
     sku = escape(request.args.get('sku',''))
     try:
         quantity = int(escape(request.args.get('qty',12)))
@@ -347,4 +357,4 @@ def __label_print():
 
     labelmaker.printlabel(name,sku,quantity)
 
-    return {'Success': True, 'name': name, 'sku': sku, 'qty': qty }
+    return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }

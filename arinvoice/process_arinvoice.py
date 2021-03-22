@@ -36,47 +36,9 @@ class arinvoice:
     def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
 
         self.orderdate='nodatefound'
-        self.__cnx = None
-        self.__mysql_setup(mysql_user,mysql_pass,mysql_db,mysql_ip,mysql_port)
-        
-    def __mysql_setup(self, mysql_user, mysql_pass,mysql_db,mysql_ip,mysql_port=3306):
-        self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
-                    host=mysql_ip,
-                    port=mysql_port,
-                    database=mysql_db)
 
-
-        cur = self.__cnx.cursor(buffered=True)
-        cur.execute('''CREATE TABLE IF NOT EXISTS pricechangelist
-            (sku MEDIUMINT(8) ZEROFILL,
-            price VARCHAR(20),
-            badbarcode BOOLEAN NOT NULL DEFAULT 0,
-            lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)''')
-
-    #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
-    #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
-        cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
-            id INT NOT NULL AUTO_INCREMENT,
-            sku MEDIUMINT(8) ZEROFILL,
-            productdescription VARCHAR(255),
-            productcategory VARCHAR(255),
-            size VARCHAR(20),
-            qty SMALLINT UNSIGNED,
-            uom VARCHAR(20),
-            priceperuom FLOAT(11,4),
-            extendedprice FLOAT(11,4),
-            suquantity SMALLINT UNSIGNED,
-            suprice FLOAT(11,4),
-            wppsavings FLOAT(11,4),
-            contdeposit FLOAT(11,4),
-            refnum INT(10),
-            invoicedate VARCHAR(20),
-            PRIMARY KEY (id))''')
-        cur.close()
-        self.__cnx.commit()
-
-    #itemlineok = re.compile('\d+,[\d\w \.]+,\w+,(\d{0,3}\()?[\w\d \.]+\)?,\d+,(BTL|CS),\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+,\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d*,?\d{1,3}+\.\d{2},\d+')
-
+        self.http = urllib3.PoolManager()
+        self.apiurl = ''
 
     # write price report to file, later will make this a redis DB
     def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None):
@@ -105,38 +67,31 @@ class arinvoice:
         return
 
     def __itmdb_pricechange(self, orderdate, sku, price, name=''):
-        cursor = self.__cnx.cursor(buffered=True)
-        badbarcode = False
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': date})
+        rows = json.dumps(r.data)
 
-        query = f'SELECT price, lastupdated, badbarcode FROM pricechangelist WHERE sku={sku}'
-
-        cursor.execute(query)
-
-        if( cursor.rowcount != 0 ):
-            dbprice, dbdate, badbarcode = cursor.fetchone()
-            if( float(dbprice.strip()) != float(price) ):
-                dbprice = float(dbprice)
-                self.__addtopricechangelist( orderdate, sku, price, databaseprice=dbprice, databasedate=dbdate )
-                query = f'UPDATE pricechangelist SET price = {price} WHERE sku = {sku}'
-                if bool(badbarcode) and self.labelmaker != None:
-                    print('Bad Barcode Detected')
-                    self.labelmaker.printlabel(name,sku)
-                cursor.execute(query)
-        else:
-            query = f'INSERT INTO pricechangelist (sku, price) VALUES ({sku},{price})'
-            cursor.execute(query)
-            self.__addtopricechangelist( orderdate, sku, price )
+        for row in rows.values()
+            self.__addtopricechangelist( row['orderdate'], row['sku'], row['price'] )
+            r = self.http.request('POST', f'http://{self.apiurl}/ar/pricechange',
+                fields={'sku': row['sku'], 'price': row['suprice']})
+            r.status
         self.__cnx.commit()
         cursor.close()
 
         return bool(badbarcode)
 
+
+#TODO: fix this
     def __addlineitem(self, line, orderdate):
         cursor = self.__cnx.cursor(buffered=True)
 
         li = lineitem(*line.split(','))
         query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
-
+        
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
+        
+        print(r.status)
+        rows = json.loads(r.data)
         try:
             cursor.execute(query)
         except Exception as err:
@@ -154,34 +109,38 @@ class arinvoice:
     def __printinvoicetofile(self, date):
         print(f'Printing invoice {date} to file')
 
-        cursor = self.__cnx.cursor(buffered=True)
-        cursor.execute(f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{date}'")
-
-        rows = cursor.fetchall()
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
+        print(r.status)
+        rows = json.loads(r.data)
 
         print('Total Rows: %s'%len(rows))
 
         if not os.path.exists(f'{self.DIRECTORY}/{date}_for-PO-import.txt'):
             with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
                 for row in rows:
-                    sku, unitprice, qty, productdescr, refnum = row
-                    fp.write('%s,%s,%s,%s\n' % ( f'{sku:06}', int(qty), unitprice, productdescr ))
+                    fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['qty'], row['unitprice'], row['productdescription'] ))
 
-        cursor.close()
 
 
     def __printpricechangelist(self, date):
-        cursor = self.__cnx.cursor(buffered=True)
-        cursor.execute(("SELECT DISTINCT sku, suprice, productdescription FROM invoicelog WHERE invoicedate='%s'")%(date))
-
-        rows = cursor.fetchall()
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'orderdate': orderdate})
+        print(r.status)
+        rows = json.loads(r.data)
 
         for row in rows:
-            sku, price, name = row
-            badbarcode = self.__itmdb_pricechange( date, sku, price, name )
+            self.__itmdb_pricechange( row['sku'], row['price'], row['name'] )
 
-        cursor.close()
 
+    def __checkforbadbarcodes(self, orderdate):
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/findbadbarcodes', fields={'orderdate': orderdate})
+        print(r.status)
+        data = json.loads(r.data)
+        print(len(data))
+
+        for row in data.values():
+            if not row['success']: 
+                raise Exception()
+            r = self.http.request('GET', f'http://{self.apiurl}/labelmaker/print', fields=row)
 
     def processCSV(self, inputfile):
         #this is what an empty line looks like

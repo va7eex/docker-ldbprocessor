@@ -2,3 +2,4 @@
 /.vs/docker-ldbprocessor/v16
 /.vs
 api/test.sh
+api/test.py
