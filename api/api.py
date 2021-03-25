@@ -31,10 +31,11 @@ redis_client = FlaskRedis(app)
 
 def __buildtables():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
 
     cur.execute('''CREATE TABLE IF NOT EXISTS iteminfolist
-        (sku MEDIUMINT(8) ZEROFILL,
+        (sku MEDIUMINT(8) ZEROFILL UNIQUE,
         price FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
         lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -72,7 +73,9 @@ def __buildtables():
         ordernumber INT UNSIGNED,
         thirdparty BOOL,
         PRIMARY KEY (id))''')
+    connection.commit()
     cur.close()
+
 
 __buildtables()
 
@@ -109,15 +112,17 @@ def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
 
-    cur = mysql.connect().cursor()
-    query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE ordernumber={ordernumber}'
+    connection = mysql.connect()
+    cur = connection.cursor()
+    query = f'SELECT * FROM orderlog WHERE ordernumber={ordernumber}'
     cur.execute(query)
 
     rows = cur.fetchall()
+    connection.commit()
+    cur.close()
     order = {}
     order[ordernumber] = {}
     for row in rows:
-    #    sku, upc, qty, productdescription = row
         order[ordernumber][row['sku']] = row
 
     return order
@@ -126,7 +131,8 @@ def __osr_getorder():
 @app.route('/osr/addlineitem', methods=['POST'])
 def __osr_addlineitem():
     
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
     ordnum = escape(request.args.get('ordnum',''))
     orddate = escape(request.args.get('orddate',''))
     thirdparty = escape(request.args.get('thirdparty',''))
@@ -138,6 +144,8 @@ def __osr_addlineitem():
         ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
         '''
     cur.execute(query)
+    connection.commit()
+    cur.close()
 
     return li.getall()
 
@@ -150,7 +158,8 @@ def __osr_addlineitem():
 #@use_kwargs({'sku': fields.Str()})
 def __ar_pricechange():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
     invoicedate = escape(request.args.get('invoicedate',''))
 
     if request.method == 'POST':
@@ -160,21 +169,25 @@ def __ar_pricechange():
         query = f'SELECT * FROM iteminfolist WHERE sku={sku}'
         cur.execute(query)
         newitem = False
-        print(len(cur.fetchall))
-        if len(cur.fetchall()) == 0:
+        results = cur.fetchall()
+        #print(len(results), results)
+        if len(results) == 0:
             newitem = True
 
         query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}'
         cur.execute(query)
 
-        mysql.connect().commit()
+        # return {'newitem': newitem, 'sku': sku, 'price': price}
 
-        return {'newitem': newitem, 'sku': sku, 'price': price}
+        query = f'SELECT * FROM iteminfolist WHERE sku={sku}'
+        cur.execute(query)
+        results = cur.fetchone()
+        #print(len(results), results)
 
-        # query = f'GET * FROM iteminfolist WHERE sku={sku}'
-        # cur.execute(query)
+        connection.commit()
+        cur.close()
 
-        # return cur.fetchone()
+        return {'newitem': newitem, **results }
 
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
@@ -184,6 +197,9 @@ def __ar_pricechange():
     cur.execute(query)
 
     rows = cur.fetchall()
+    connection.commit()
+    cur.close()
+
     returnrows = {}
     for row in range(len(rows)):
         returnrows[row] = rows.pop(0)
@@ -194,7 +210,8 @@ def __ar_pricechange():
 #@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
 def __ar_getitem():
     
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
     sku = escape(request.args.get('sku',''))
     allitems = escape(request.args.get('all','false'))
     startdate = escape(request.args.get('startdate',''))
@@ -212,6 +229,8 @@ def __ar_getitem():
 
     cur.execute(query)
     rows = cur.fetchall()
+    connection.commit()
+    cur.close()
 
     returnrows = {}
     for row in range(len(rows)):
@@ -223,19 +242,24 @@ def __ar_getitem():
 #@use_kwargs({'orderdate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
 def __ar_addlineitem():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
     orderdate = escape(request.form.get('orderdate',''))
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemAR(**restofrequest)
 
     query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+    cur.execute(query)
+    connection.commit()
+    cur.close()
     return query
 
 @app.route('/ar/getinvoice', methods=['GET'])
 #@use_kwargs({'invoicedate': fields.Str()})
 def __ar_getinvoice():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
 
     invoicedate = escape(request.args.get('invoicedate',''))
     year = escape(request.args.get('year',''))
@@ -251,6 +275,8 @@ def __ar_getinvoice():
     invoice = {}
     rows = cur.fetchall()
     print('Total Rows: %s'%len(rows))
+    connection.commit()
+    cur.close()
 
     for row in range(len(rows)):
         invoice[row] = rows.pop(0)
@@ -260,7 +286,8 @@ def __ar_getinvoice():
 @app.route('/ar/findbadbarcodes', methods=['GET'])
 def __ar_findbadbarcodes():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
 
     orderdate = escape(request.args.get('orderdate',''))
 
@@ -269,6 +296,8 @@ def __ar_findbadbarcodes():
     cur.execute(query)
 
     rows = cur.fetchall()
+    connection.commit()
+    cur.close()
     data = {}
     for row in range(len(rows)):
         data[row] = rows.pop(0)
@@ -282,7 +311,8 @@ def __ar_findbadbarcodes():
 @app.route('/misc/badbarcode', methods=['GET','POST'])
 def __misc_badbarcode():
 
-    cur = mysql.connect().cursor()
+    connection = mysql.connect()
+    cur = connection.cursor()
     if request.method == 'POST':
         sku = escape(request.form.get('sku',''))
         badbarcode = escape(request.form.get('badbarcode',0))
@@ -295,8 +325,11 @@ def __misc_badbarcode():
 
     query = f'SELECT sku, badbarcode IN iteminfolist WHERE sku={sku}'
     cur.execute(query)
+    result = cur.fetchone()
+    connection.commit()
+    cur.close()
 
-    return cur.fetchone()
+    return result
 
 
 
@@ -308,7 +341,8 @@ def __misc_badbarcode():
 def itemsearch():
     if request.method == 'GET':
         
-        cur = mysql.connect().cursor()
+        connection = mysql.connect()
+    cur = connection.cursor()
 
         search = escape(request.args.get('search',''))
 
@@ -317,6 +351,8 @@ def itemsearch():
 
         print()
         rows = cur.fetchall()
+        mysql.connect().commit()
+        cur.close()
         if len(rows) == 0:
             return 'None'
 
@@ -328,8 +364,11 @@ def itemsearch():
 @app.route('/barcodeinput', methods=['POST'])
 def barcodeinput():
     if request.method == 'POST':
-        cur = mysql.connect().cursor()
+        connection = mysql.connect()
+    cur = connection.cursor()
         input = escape(request.args.get('bc'))
+        mysql.connect().commit()
+        cur.close()
 
 #
 # Label Makers
