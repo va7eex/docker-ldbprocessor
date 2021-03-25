@@ -58,7 +58,7 @@ def __buildtables():
         wppsavings FLOAT(11,4),
         contdeposit FLOAT(11,4),
         refnum INT(10),
-        invoicedate VARCHAR(20),
+        invoicedate DATE,
         PRIMARY KEY (id))''')
 
     cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
@@ -69,7 +69,7 @@ def __buildtables():
         sellingunitsize VARCHAR(32),
         uom VARCHAR(20),
         qty SMALLINT UNSIGNED,
-        orderdate INT(8) UNSIGNED,
+        orderdate DATE,
         ordernumber INT UNSIGNED,
         thirdparty BOOL,
         PRIMARY KEY (id))''')
@@ -107,27 +107,46 @@ def __bc_get():
 #
 
 @app.route('/osr/getorder', methods=['GET','POST'])
-#@use_kwargs({'ordernumber': fields.Str()})
+#@use_kwargs({'ordernumber': fields.Str(), 'thirdparty': fields.Bool()})
 def __osr_getorder():
 
     ordernumber = escape(request.args.get('ordernumber',''))
+    thirdparty = escape(request.args.get('thirdparty',''))
+    orderdate = escape(request.args.get('orderdate',''))
 
     connection = mysql.connect()
     cur = connection.cursor()
-    query = f'SELECT * FROM orderlog WHERE ordernumber={ordernumber}'
-    cur.execute(query)
 
+    if orderdate:
+        query = f'SELECT DISTINCT ordernumber FROM orderlog WHERE orderdate={orderdate}'
+        cur.execute(query)
+        rows = cur.fetchall()
+        connection.commit()
+        cur.close()
+        returnrows = {}
+        returnrows['orderdate'] = orderdate
+        returnrows['ordernumber'] = []
+        for row in rows:
+            returnrows['ordernumber'].append(row['ordernumber'])
+        return returnrows
+
+    query = f'SELECT id,sku,upc,productdescription,sellingunitsize,uom,qty,thirdparty FROM orderlog WHERE ordernumber={ordernumber}'
+    if thirdparty:
+        query += ' AND thirdparty={thirdparty}'
+    cur.execute(query)
     rows = cur.fetchall()
+
+    query = f'SELECT DISTINCT orderdate, ordernumber FROM orderlog WHERE ordernumber={ordernumber}'
+    cur.execute(query)
+    details = cur.fetchone()
     connection.commit()
     cur.close()
-    order = {}
-    order[ordernumber] = {}
-    for row in rows:
-        order[ordernumber][row['sku']] = row
+    returnrows = {}
+    returnrows['items'] = rows
+    #for row in rows:
+    #    returnrows['items'].append(rows.pop(0)
+    return { **returnrows, **details}
 
-    return order
-
-#TODO
 @app.route('/osr/addlineitem', methods=['POST'])
 def __osr_addlineitem():
     
@@ -139,10 +158,7 @@ def __osr_addlineitem():
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemOS(**restofrequest)
 
-
-    query = f'''INSERT INTO orderlog (
-        ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )
-        '''
+    query = f'INSERT INTO orderlog (ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )'
     cur.execute(query)
     connection.commit()
     cur.close()
@@ -160,7 +176,6 @@ def __ar_pricechange():
 
     connection = mysql.connect()
     cur = connection.cursor()
-    invoicedate = escape(request.args.get('invoicedate',''))
 
     if request.method == 'POST':
 
@@ -189,6 +204,7 @@ def __ar_pricechange():
 
         return {'newitem': newitem, **results }
 
+    invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
     query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND invoicelog.suprice!=iteminfolist.price AND invoicelog.sku=iteminfolist.sku'
@@ -201,8 +217,8 @@ def __ar_pricechange():
     cur.close()
 
     returnrows = {}
-    for row in range(len(rows)):
-        returnrows[row] = rows.pop(0)
+    for row in rows:
+        returnrows[row['id']] = rows.pop(0)
     return returnrows
 
 
@@ -233,8 +249,8 @@ def __ar_getitem():
     cur.close()
 
     returnrows = {}
-    for row in range(len(rows)):
-        returnrows[row] = rows.pop(0)
+    for row in rows:
+        returnrows[row['id']] = rows.pop(0)
     return returnrows
 
 
@@ -278,8 +294,8 @@ def __ar_getinvoice():
     connection.commit()
     cur.close()
 
-    for row in range(len(rows)):
-        invoice[row] = rows.pop(0)
+    for row in rows:
+        invoice[row['id']] = rows.pop(0)
 
     return invoice
 
@@ -292,16 +308,15 @@ def __ar_findbadbarcodes():
     orderdate = escape(request.args.get('orderdate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.sku, invoicelog.productdescription FROM invoicelog, pricechangelist WHERE invoicelog.invoicedate=\'{orderdate}\' AND invoicelog.sku=pricechangelist.sku AND pricechangelist.badbarcode=1'
+    query = f'SELECT invoicelog.id, invoicelog.sku, invoicelog.productdescription FROM invoicelog, pricechangelist WHERE invoicelog.invoicedate=\'{orderdate}\' AND invoicelog.sku=pricechangelist.sku AND pricechangelist.badbarcode=1'
     cur.execute(query)
 
     rows = cur.fetchall()
     connection.commit()
     cur.close()
     data = {}
-    for row in range(len(rows)):
-        data[row] = rows.pop(0)
-
+    for row in rows:
+        data[row['id']] = rows.pop(0)
     return data
 
 #
@@ -342,7 +357,7 @@ def itemsearch():
     if request.method == 'GET':
         
         connection = mysql.connect()
-    cur = connection.cursor()
+        cur = connection.cursor()
 
         search = escape(request.args.get('search',''))
 
@@ -365,7 +380,7 @@ def itemsearch():
 def barcodeinput():
     if request.method == 'POST':
         connection = mysql.connect()
-    cur = connection.cursor()
+        cur = connection.cursor()
         input = escape(request.args.get('bc'))
         mysql.connect().commit()
         cur.close()
