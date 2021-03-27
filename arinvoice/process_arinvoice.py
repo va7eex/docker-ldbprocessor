@@ -19,31 +19,30 @@ import json
 import time
 import datetime
 import re
+import urllib3
 from datetime import date
 #import mysqlclient
-from mysql.connector import (connection)
 
-from lineitem import lineitem
-from barcode_printer import Label_Maker
+from LineItem import LineItemAR as LineItem
 
 class arinvoice:
 
     DIRECTORY='/var/ldbinvoice'
     PB_FILE='processedbarcodes.json'
 
-    DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
+    DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
 
-    def __init__(self, redis_ip, redis_port, mysql_user, mysql_pass, mysql_ip, mysql_port, mysql_db):
+    def __init__(self, apiurl):
 
         self.orderdate='nodatefound'
 
         self.http = urllib3.PoolManager()
-        self.apiurl = ''
+        self.apiurl = apiurl
 
     # write price report to file, later will make this a redis DB
-    def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None):
+    def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None, newitem=False):
         with open(f'{self.DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
-            if bool(databaseprice):
+            if not newitem:
                 #ignore price changes below a threshold
                 if abs(price-databaseprice)<os.getenv('PRICECHANGEIGNORE'): return
 
@@ -62,48 +61,28 @@ class arinvoice:
             else:
                 fp.write(f'[NEW] {sku:06}: {price}\n')
 
-    #does nothing yet
-    def __generatepricechangereport(self):
-        return
-
-    def __itmdb_pricechange(self, orderdate, sku, price, name=''):
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': date})
+    def __itmdb_pricechange(self, orderdate):
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': orderdate})
         rows = json.dumps(r.data)
 
-        for row in rows.values()
+        for row in rows.values():
             self.__addtopricechangelist( row['orderdate'], row['sku'], row['price'] )
             r = self.http.request('POST', f'http://{self.apiurl}/ar/pricechange',
                 fields={'sku': row['sku'], 'price': row['suprice']})
-            r.status
-        self.__cnx.commit()
-        cursor.close()
+            data = json.dumps(r.data)
+            
 
-        return bool(badbarcode)
-
+    def __printpricechangelist(self, orderdate):
+        self.__itemdb_pricechange(orderdate)
 
 #TODO: fix this
     def __addlineitem(self, line, orderdate):
-        cursor = self.__cnx.cursor(buffered=True)
 
-        li = lineitem(*line.split(','))
-        query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+        li = LineItem(*line.split(','))
         
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/addlineitem', fields={'orderdate': orderdate, **li.getall()})
         
         print(r.status)
-        rows = json.loads(r.data)
-        try:
-            cursor.execute(query)
-        except Exception as err:
-            print(f'\n!!! ERROR !!!\n{err}\n{line}\n{query}\n')
-            with open(f'{self.DIRECTORY}/database-errors.txt', 'a') as fp:
-                fp.write('Error at line:\n%s'%line)
-                fp.write(f'\n{err}')
-                if(len(li) > 13):
-                    fp.write('\n\t Cause: Errant comma somewhere in line')
-                fp.write('\nNOTE: This line has been omitted from the final PO Import file due to errors\n')
-        self.__cnx.commit()
-        cursor.close()
 
 
     def __printinvoicetofile(self, date):
@@ -119,16 +98,6 @@ class arinvoice:
             with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
                 for row in rows:
                     fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['qty'], row['unitprice'], row['productdescription'] ))
-
-
-
-    def __printpricechangelist(self, date):
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'orderdate': orderdate})
-        print(r.status)
-        rows = json.loads(r.data)
-
-        for row in rows:
-            self.__itmdb_pricechange( row['sku'], row['price'], row['name'] )
 
 
     def __checkforbadbarcodes(self, orderdate):
@@ -181,20 +150,8 @@ class arinvoice:
         self.__printinvoicetofile( orderdate )
         self.__printpricechangelist( orderdate )
 
-        self.__cnx.close()
-
-    def __importconfig(inputfile):
-        return 0
 
 if __name__=='__main__':
-    ari = arinvoice(
-        os.getenv('REDIS_IP'), 
-        os.getenv('REDIS_PORT'), 
-        os.getenv('MYSQL_USER'), 
-        os.getenv('MYSQL_PASSWORD'),
-        os.getenv('MYSQL_IP'),
-        os.getenv('MYSQL_PORT'),
-        os.getenv('MYSQL_DATABASE'),
-        os.getenv('LABEL_MAKER'))
+    ari = arinvoice(os.getenv('APIURL'))
     ari.processCSV(
         sys.argv[1])

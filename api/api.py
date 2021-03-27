@@ -207,7 +207,7 @@ def __ar_pricechange():
     invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND invoicelog.suprice!=iteminfolist.price AND invoicelog.sku=iteminfolist.sku'
+    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND (invoicelog.suprice!=iteminfolist.price AND invoicelog.sku=iteminfolist.sku) OR (iteminfolist.price IS NULL AND iteminfolist.sku IS NULL)'
     print(query)
     
     cur.execute(query)
