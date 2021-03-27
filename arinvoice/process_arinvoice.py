@@ -73,7 +73,7 @@ class arinvoice:
             
 
     def __printpricechangelist(self, orderdate):
-        self.__itemdb_pricechange(orderdate)
+        self.__itmdb_pricechange(orderdate)
 
 #TODO: fix this
     def __addlineitem(self, line, orderdate):
