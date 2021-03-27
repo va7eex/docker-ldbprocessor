@@ -40,40 +40,45 @@ class arinvoice:
         self.apiurl = apiurl
 
     # write price report to file, later will make this a redis DB
-    def __addtopricechangelist(self, orderdate, sku, price, databaseprice=None, databasedate=None, newitem=False):
-        with open(f'{self.DIRECTORY}/{orderdate}_pricedeltareport.txt', 'a') as fp:
-            if not newitem:
+    def __addtopricechangelist(self, invoicedate, **kwargs):
+        with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
+            if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
                 #ignore price changes below a threshold
-                if abs(price-databaseprice)<os.getenv('PRICECHANGEIGNORE'): return
+                if abs(kwargs['price']-kwargs['oldprice'])<float(os.getenv('PRICECHANGEIGNORE')): return
 
                 alert=''
-                if( (price - databaseprice)/ databaseprice > 0.1 ):
+                if( (kwargs['price']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
                     alert += '[pc>10%] '
 
-                if( price >= (databaseprice + 5) ):
+                if( kwargs['price'] >= (kwargs['oldprice'] + 5) ):
                     alert += '[pc$5+] '
-                elif( price >= (databaseprice + 3) ):
+                elif( kwargs['price'] >= (kwargs['oldprice'] + 3) ):
                     alert += '[pc$3+] '
-                elif( price >= (databaseprice + 1) ):
+                elif( kwargs['price'] >= (kwargs['oldprice'] + 1) ):
                     alert += '[pc$1+] '
 
-                fp.write(f'{alert}{sku:06}: {databaseprice} changed to {price} (last updated {databasedate})\n')
+                fp.write(f"{alert}{kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['price']} (last updated {kwargs['oldlastupdated']})\n")
             else:
-                fp.write(f'[NEW] {sku:06}: {price}\n')
+                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['price']}\n")
 
-    def __itmdb_pricechange(self, orderdate):
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': orderdate})
+    def __itmdb_checkchange(self, invoicedate):
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': invoicedate})
         rows = json.dumps(r.data)
 
         for row in rows.values():
-            self.__addtopricechangelist( row['orderdate'], row['sku'], row['price'] )
-            r = self.http.request('POST', f'http://{self.apiurl}/ar/pricechange',
-                fields={'sku': row['sku'], 'price': row['suprice']})
-            data = json.dumps(r.data)
+            self.__addtopricechangelist( invoicedate, **row )
             
 
-    def __printpricechangelist(self, orderdate):
-        self.__itmdb_pricechange(orderdate)
+    def __dopricechangelist(self, orderdate):
+
+        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
+        print(r.status)
+        rows = json.loads(r.data)
+        for row in rows:
+            r = self.http.request('POST', f'http://{self.apiurl}/ar/getinvoice', fields={'sku': row['sku'], 'price': row['suprice']})
+            print(r.data)
+        
+        self.__itmdb_checkchange(orderdate)
 
 #TODO: fix this
     def __addlineitem(self, line, orderdate):
@@ -148,7 +153,7 @@ class arinvoice:
                     print(line.strip())
 
         self.__printinvoicetofile( orderdate )
-        self.__printpricechangelist( orderdate )
+        self.__dopricechangelist( orderdate )
 
 
 if __name__=='__main__':

@@ -37,8 +37,10 @@ def __buildtables():
     cur.execute('''CREATE TABLE IF NOT EXISTS iteminfolist
         (sku MEDIUMINT(8) ZEROFILL UNIQUE,
         price FLOAT(11,4),
+        oldprice FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
         lastupdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        oldlastupdated TIMESTAMP,
         PRIMARY KEY (sku))''')
 
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
@@ -188,8 +190,11 @@ def __ar_pricechange():
         #print(len(results), results)
         if len(results) == 0:
             newitem = True
+        else:
+            oldprice = results['price']
+            oldlastupdated = results['lastupdated']
 
-        query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}'
+        query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}, oldprice={oldprice}, oldlastupdated={oldlastupdated}'
         cur.execute(query)
 
         # return {'newitem': newitem, 'sku': sku, 'price': price}
@@ -207,7 +212,7 @@ def __ar_pricechange():
     invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND (invoicelog.suprice!=iteminfolist.price AND invoicelog.sku=iteminfolist.sku) OR (iteminfolist.price IS NULL AND iteminfolist.sku IS NULL)'
+    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND iteminfolist.lastupdated=\'{invoicedate}\''
     print(query)
     
     cur.execute(query)
