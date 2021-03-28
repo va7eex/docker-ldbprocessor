@@ -32,89 +32,85 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
 
-    def __init__(self, apiurl):
-
-        self.orderdate='nodatefound'
+    def __init__(self, apiurl, apikey=''):
 
         self.http = urllib3.PoolManager()
+        self.apikey = apikey
         self.apiurl = apiurl
 
+    def __apiquery(self, method='GET', url='', **kwargs):
+        print(f'API query to: http://{self.apiurl}{url}')
+        r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+        if r.status != 200:
+            raise Exception(f'HTTP Response {r.status}')
+        rows = json.dumps(r.data)
+        return rows, r.status
+
     # write price report to file, later will make this a redis DB
-    def __addtopricechangelist(self, invoicedate, **kwargs):
+    def __addtopricechangereport(self, invoicedate, **kwargs):
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
             if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
                 #ignore price changes below a threshold
-                if abs(kwargs['price']-kwargs['oldprice'])<float(os.getenv('PRICECHANGEIGNORE')): return
+                if abs(kwargs['suprice']-kwargs['oldprice'])<float(os.getenv('PRICECHANGEIGNORE')): return
 
                 alert=''
-                if( (kwargs['price']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
-                    alert += '[pc>10%] '
+                if( (kwargs['suprice']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
+                    alert += '[pc>10%]'
 
-                if( kwargs['price'] >= (kwargs['oldprice'] + 5) ):
-                    alert += '[pc$5+] '
-                elif( kwargs['price'] >= (kwargs['oldprice'] + 3) ):
-                    alert += '[pc$3+] '
-                elif( kwargs['price'] >= (kwargs['oldprice'] + 1) ):
-                    alert += '[pc$1+] '
+                if( kwargs['suprice'] >= (kwargs['oldprice'] + 5) ):
+                    alert += '[pc$5+]'
+                elif( kwargs['suprice'] >= (kwargs['oldprice'] + 3) ):
+                    alert += '[pc$3+]'
+                elif( kwargs['suprice'] >= (kwargs['oldprice'] + 1) ):
+                    alert += '[pc$1+]'
 
-                fp.write(f"{alert}{kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['price']} (last updated {kwargs['oldlastupdated']})\n")
+                fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
-                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['price']}\n")
+                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
 
     def __itmdb_checkchange(self, invoicedate):
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/pricechange', fields={'invoicedate': invoicedate})
-        rows = json.dumps(r.data)
+        rows, status = self.__apiquery('GET', '/ar/pricechange', **{'invoicedate': invoicedate})
 
         for row in rows.values():
-            self.__addtopricechangelist( invoicedate, **row )
+            self.__addtopricechangereport( invoicedate, **row )
             
 
-    def __dopricechangelist(self, orderdate):
+    def __dopricechangelist(self, invoicedate):
 
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
-        print(r.status)
-        rows = json.loads(r.data)
-        for row in rows:
-            r = self.http.request('POST', f'http://{self.apiurl}/ar/getinvoice', fields={'sku': row['sku'], 'price': row['suprice']})
-            print(r.data)
+        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': date})
+        for row in rows.values():
+            self.__apiquery('POST', '/ar/getinvoice', **{'sku': row['sku'], 'price': row['suprice']})
         
-        self.__itmdb_checkchange(orderdate)
+        self.__itmdb_checkchange(invoicedate)
 
-#TODO: fix this
-    def __addlineitem(self, line, orderdate):
+    def __addlineitem(self, line, invoicedate):
 
         li = LineItem(*line.split(','))
         
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/addlineitem', fields={'orderdate': orderdate, **li.getall()})
-        
-        print(r.status)
+        self.__apiquery('GET', '/ar/addlineitem', **{'invoicedate': invoicedate, **li.getall()})
 
 
     def __printinvoicetofile(self, date):
         print(f'Printing invoice {date} to file')
 
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/getinvoice', fields={'invoicedate': date})
-        print(r.status)
-        rows = json.loads(r.data)
+        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': date})
 
         print('Total Rows: %s'%len(rows))
 
         if not os.path.exists(f'{self.DIRECTORY}/{date}_for-PO-import.txt'):
             with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
-                for row in rows:
+                for row in rows.values():
                     fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['qty'], row['unitprice'], row['productdescription'] ))
 
 
-    def __checkforbadbarcodes(self, orderdate):
-        r = self.http.request('GET', f'http://{self.apiurl}/ar/findbadbarcodes', fields={'orderdate': orderdate})
-        print(r.status)
-        data = json.loads(r.data)
-        print(len(data))
+    def __checkforbadbarcodes(self, invoicedate):
+        rows, status = self.__apiquery('GET', '/ar/findbadbarcodes', **{'invoicedate': invoicedate})
+        print(len(rows))
 
-        for row in data.values():
+        for row in rows.values():
             if not row['success']: 
                 raise Exception()
-            r = self.http.request('GET', f'http://{self.apiurl}/labelmaker/print', fields=row)
+            self.http.request('GET', f'http://{self.apiurl}/labelmaker/print', fields={'apikey': self.apikey, **row})
 
     def processCSV(self, inputfile):
         #this is what an empty line looks like
@@ -129,34 +125,35 @@ class arinvoice:
         #            print(line)
 
                 if(line.find('Invoice Date:') > -1 ):
-                    orderdatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
-        #            orderdate = datetime.datetime.strptime(orderdatefromldb,'%Y-%m-%d %H:%M:%S.%f')
-                    orderdate = datetime.datetime.strptime(orderdatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
-                    print(orderdate)
+                    invoicedatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
+        #            invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%Y-%m-%d %H:%M:%S.%f')
+                    invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
+                    print(invoicedate)
                 if( line.strip() == emptyline.strip() and append ):
                     append=False
                 if( append ):
                     imparsabledollaramount = self.DOLLARAMOUNT.search(line)
-                    if( imparsabledollaramount is not None ):
+                    if imparsabledollaramount is not None:
                         print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
-                    line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
-                    line = re.sub( '( , |, | ,)', ',', line )
-                    line = re.sub( '(,,|, ,)', ',0.00,', line )
+                    line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
+                    line = re.sub(r'( , |, | ,)', ',', line)
+                    line = re.sub(r'(,,|, ,)', ',0.00,', line)
 
-                    self.__addlineitem(line, orderdate)
+                    self.__addlineitem(line, invoicedate)
                 if( line.find( 'SKU,Product Description') > -1):
                     append=True
-                    emptyline = re.sub('[^,]','',line)
+                    emptyline = re.sub(r'[^,]','',line)
                     print(emptyline)
                     print(line.strip())
 
-        self.__printinvoicetofile( orderdate )
-        self.__dopricechangelist( orderdate )
+        self.__checkforbadbarcodes( invoicedate )
+        self.__printinvoicetofile( invoicedate )
+        self.__dopricechangelist( invoicedate )
 
 
 if __name__=='__main__':
-    ari = arinvoice(os.getenv('APIURL'))
+    ari = arinvoice(os.getenv('APIURL'),os.getenv('APIKEY'))
     ari.processCSV(
         sys.argv[1])
