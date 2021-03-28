@@ -32,11 +32,12 @@ class arinvoice:
 
     DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
 
-    def __init__(self, apiurl, apikey=''):
+    def __init__(self, apiurl, apikey='', pricechangeignore=0.0):
 
         self.http = urllib3.PoolManager()
         self.apikey = apikey
         self.apiurl = apiurl
+        self.pricechangeignore = float(pricechangeignore)
 
     def __apiquery(self, method='GET', url='', **kwargs):
         print(f'API query to: http://{self.apiurl}{url}')
@@ -51,7 +52,7 @@ class arinvoice:
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
             if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
                 #ignore price changes below a threshold
-                if abs(kwargs['suprice']-kwargs['oldprice'])<float(os.getenv('PRICECHANGEIGNORE')): return
+                if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return
 
                 alert=''
                 if( (kwargs['suprice']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
@@ -154,6 +155,9 @@ class arinvoice:
 
 
 if __name__=='__main__':
-    ari = arinvoice(os.getenv('APIURL'),os.getenv('APIKEY'))
+    ari = arinvoice(
+        os.getenv('APIURL'),
+        os.getenv('APIKEY'),
+        pricechangeignore=os.getenv('PRICECHANGEIGNORE'))
     ari.processCSV(
         sys.argv[1])

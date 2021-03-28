@@ -6,6 +6,7 @@ ARG TZ=America/Vancouver
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV APIURL=127.0.0.1
+ENV APIKEY=''
 ENV PRICECHANGEIGNORE=0.00
 
 RUN apt update && \

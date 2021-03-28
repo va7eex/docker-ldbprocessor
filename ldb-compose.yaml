@@ -38,10 +38,10 @@ services:
     user: "1002:1002"
     environment:
       - FLASK_APP=api.py
-      - MYSQL_DATABASE_HOST=ldb_Database
-      - MYSQL_DATABASE_DB=${MYSQL_DATABASE}
-      - MYSQL_DATABASE_USER=${MYSQL_USER}
-      - MYSQL_DATABASE_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_IP=ldb_Database
+      - MYSQL_DB=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     restart: always
     ports:
       - 5000:5000
@@ -53,24 +53,25 @@ services:
 
   #apps, will build to order
   ## Barcode processor
-  ldb_processor_bc:
-    container_name: ldb_processor_bc
-    build:
-      context: barcodeprocessor/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    user: "1002:1002"
-    environment:
-      - API_URL=ldb_api
-    volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-    restart: always
-    depends_on:
-      - ldb_api
-    networks:
-      - ldbbackend
-  ## Order Submission Processor
+  # ldb_processor_bc:
+  #   container_name: ldb_processor_bc
+  #   build:
+  #     context: barcodeprocessor/
+  #     dockerfile: Dockerfile
+  #     args:
+  #       - TZ=${TZ}
+  #   user: "1002:1002"
+  #   environment:
+  #     - APIURL=ldb_api
+  #     - APIKEY=${APIKEY}
+  #   volumes:
+  #     - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+  #   restart: always
+  #   depends_on:
+  #     - ldb_api
+  #   networks:
+  #     - ldbbackend
+  # ## Order Submission Processor
   ldb_processor_os:
     container_name: ldb_processor_os
     build:
@@ -80,7 +81,8 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - API_URL=ldb_api
+      - APIURL=ldb_api
+      - APIKEY=${APIKEY}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
@@ -98,7 +100,8 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - API_URL=ldb_api
+      - APIURL=ldb_api
+      - APIKEY=${APIKEY}
       - PRICECHANGEIGNORE=${PRICECHANGEIGNORE}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
