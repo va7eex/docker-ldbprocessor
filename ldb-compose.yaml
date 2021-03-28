@@ -111,25 +111,26 @@ services:
     networks:
       - ldbbackend
   ## IMAP downloader
-  # ldb_emailwatcher_dev:
-  #   container_name: ldb_emailwatcher
-  #   build:
-  #     context: emailwatcher/
-  #     dockerfile: Dockerfile
-  #     args:
-  #       - TZ=${TZ}
-  #   user: "1002:1002"
-  #   environment:
-  #     - IMAP_ADDR=${IMAP_ADDR}
-  #     - IMAP_USER=${IMAP_USER}
-  #     - IMAP_PASS=${IMAP_PASS}
-  #     - IMAP_PORT=${IMAP_PORT}
-  #   volumes:
-  #     - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
-  #   restart: always
-  #   depends_on:
-  #     - ldb_processor_ar
-  #     - ldb_processor_os
+  ldb_emailwatcher_dev:
+    container_name: ldb_emailwatcher_api
+    build:
+      context: emailwatcher/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      - IMAP_ADDR=${IMAP_ADDR}
+      - IMAP_USER=${IMAP_USER}
+      - IMAP_PASS=${IMAP_PASS}
+      - IMAP_PORT=${IMAP_PORT}
+      - SYNCTIME=1
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+    restart: always
+    depends_on:
+      - ldb_processor_ar
+      - ldb_processor_os
 
 networks:
   ldbbackend:
