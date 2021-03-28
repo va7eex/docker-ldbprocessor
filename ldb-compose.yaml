@@ -18,7 +18,7 @@ services:
     networks:
       - ldbbackend
     volumes:
-      - /mnt/ldbdatabase:/config
+      - /mnt/ldbdatabase_api:/config
   ## Redis
   ldb_redis:
     image: redis:alpine
@@ -65,7 +65,7 @@ services:
   #     - APIURL=ldb_api
   #     - APIKEY=${APIKEY}
   #   volumes:
-  #     - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+  #     - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
   #   restart: always
   #   depends_on:
   #     - ldb_api
@@ -84,7 +84,7 @@ services:
       - APIURL=ldb_api
       - APIKEY=${APIKEY}
     volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_api
@@ -104,7 +104,7 @@ services:
       - APIKEY=${APIKEY}
       - PRICECHANGEIGNORE=${PRICECHANGEIGNORE}
     volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_api
@@ -125,7 +125,7 @@ services:
       - IMAP_PASS=${IMAP_PASS}
       - IMAP_PORT=${IMAP_PORT}
     volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_processor_ar

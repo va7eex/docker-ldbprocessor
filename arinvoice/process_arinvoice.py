@@ -21,7 +21,6 @@ import datetime
 import re
 import urllib3
 from datetime import date
-#import mysqlclient
 
 from LineItem import LineItemAR as LineItem
 
