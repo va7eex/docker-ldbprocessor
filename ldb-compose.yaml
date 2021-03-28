@@ -5,7 +5,7 @@ services:
   ## MariaDB
   ldb_database:
     image: linuxserver/mariadb:latest
-    container_name: ldb_database
+    container_name: ldb_database_api
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -22,7 +22,7 @@ services:
   ## Redis
   ldb_redis:
     image: redis:alpine
-    container_name: ldb_redis
+    container_name: ldb_redis_api
     restart: always
     networks:
       - ldbbackend
@@ -38,7 +38,7 @@ services:
     user: "1002:1002"
     environment:
       - FLASK_APP=api.py
-      - MYSQL_IP=ldb_Database
+      - MYSQL_IP=ldb_database_api
       - MYSQL_DB=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -48,8 +48,8 @@ services:
     networks:
       - ldbbackend
     depends_on:
-      - ldb_redis
-      - ldb_database
+      - ldb_redis_api
+      - ldb_database_api
 
   #apps, will build to order
   ## Barcode processor
@@ -73,7 +73,7 @@ services:
   #     - ldbbackend
   # ## Order Submission Processor
   ldb_processor_os:
-    container_name: ldb_processor_os
+    container_name: ldb_processor_os_api
     build:
       context: ordersubmission/
       dockerfile: Dockerfile
@@ -92,7 +92,7 @@ services:
       - ldbbackend
   ## ARInvoice Processor
   ldb_processor_ar:
-    container_name: ldb_processor_ar
+    container_name: ldb_processor_ar_api
     build:
       context: arinvoice/
       dockerfile: Dockerfile
@@ -111,25 +111,25 @@ services:
     networks:
       - ldbbackend
   ## IMAP downloader
-  ldb_emailwatcher:
-    container_name: ldb_emailwatcher
-    build:
-      context: emailwatcher/
-      dockerfile: Dockerfile
-      args:
-        - TZ=${TZ}
-    user: "1002:1002"
-    environment:
-      - IMAP_ADDR=${IMAP_ADDR}
-      - IMAP_USER=${IMAP_USER}
-      - IMAP_PASS=${IMAP_PASS}
-      - IMAP_PORT=${IMAP_PORT}
-    volumes:
-      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
-    restart: always
-    depends_on:
-      - ldb_processor_ar
-      - ldb_processor_os
+  # ldb_emailwatcher_dev:
+  #   container_name: ldb_emailwatcher
+  #   build:
+  #     context: emailwatcher/
+  #     dockerfile: Dockerfile
+  #     args:
+  #       - TZ=${TZ}
+  #   user: "1002:1002"
+  #   environment:
+  #     - IMAP_ADDR=${IMAP_ADDR}
+  #     - IMAP_USER=${IMAP_USER}
+  #     - IMAP_PASS=${IMAP_PASS}
+  #     - IMAP_PORT=${IMAP_PORT}
+  #   volumes:
+  #     - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+  #   restart: always
+  #   depends_on:
+  #     - ldb_processor_ar
+  #     - ldb_processor_os
 
 networks:
   ldbbackend:
