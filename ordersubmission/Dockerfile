@@ -15,10 +15,10 @@ RUN apt update && \
     python3-dateutil \
     python3-redis \
     python3-pip \
-    inotify-tools
-
-RUN pip3 install html-to-csv \
+    inotify-tools \
     csvkit
+
+RUN pip3 install html-to-csv 
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
     && date
