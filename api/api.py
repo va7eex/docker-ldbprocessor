@@ -212,7 +212,7 @@ def __ar_pricechange():
     invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.lastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND iteminfolist.lastupdated=\'{invoicedate}\''
+    query = f'SELECT invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.oldprice, iteminfolist.oldlastupdated FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND iteminfolist.lastupdated=\'{invoicedate}\''
     print(query)
     
     cur.execute(query)
@@ -260,16 +260,16 @@ def __ar_getitem():
 
 
 @app.route('/ar/addlineitem', methods=['POST'])
-#@use_kwargs({'orderdate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
+#@use_kwargs({'invoicedate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
 def __ar_addlineitem():
 
     connection = mysql.connect()
     cur = connection.cursor()
-    orderdate = escape(request.form.get('orderdate',''))
+    invoicedate = escape(request.form.get('invoicedate',''))
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemAR(**restofrequest)
 
-    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{orderdate}')"
+    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{invoicedate}')"
     cur.execute(query)
     connection.commit()
     cur.close()
@@ -310,10 +310,10 @@ def __ar_findbadbarcodes():
     connection = mysql.connect()
     cur = connection.cursor()
 
-    orderdate = escape(request.args.get('orderdate',''))
+    invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.id, invoicelog.sku, invoicelog.productdescription FROM invoicelog, pricechangelist WHERE invoicelog.invoicedate=\'{orderdate}\' AND invoicelog.sku=pricechangelist.sku AND pricechangelist.badbarcode=1'
+    query = f'SELECT invoicelog.id, invoicelog.sku, invoicelog.productdescription FROM invoicelog, pricechangelist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND invoicelog.sku=pricechangelist.sku AND pricechangelist.badbarcode=1'
     cur.execute(query)
 
     rows = cur.fetchall()

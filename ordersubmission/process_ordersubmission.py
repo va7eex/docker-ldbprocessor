@@ -37,17 +37,26 @@ class OrderSubmissionReport:
     ORDERDATELINE = re.compile(r'Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
     ORDERSHIPDATELINE = re.compile(r'Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
 
-    DOLLARVALUE = re.compile(r'\$\d+,\d{3}')
+    DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
 
     ITEMLISTLINE = re.compile(r'^\d{8}')
 
     ITEMLINEOK = re.compile(r'\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
-    def __init__(self, apiurl):
+    def __init__(self, apiurl, apikey=''):
         print('LDB OSR Processor started.')
 
         self.http = urllib3.PoolManager()
         self.apiurl = apiurl
+        self.apikey = apikey
+
+    def __apiquery(self, method='GET', url='', **kwargs):
+        print(f'API query to: http://{self.apiurl}{url}')
+        r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+        if r.status != 200:
+            raise Exception(f'HTTP Response {r.status}')
+        rows = json.dumps(r.data)
+        return rows, r.status
 
     def __converttimedatetonum(self, time):
 
@@ -61,9 +70,9 @@ class OrderSubmissionReport:
             return
 
     #    query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
-        r = self.http.request('GET', f'http://{self.apiurl}/osr/getorder', fields={'ordernumber': ordernumber})
+        rows = self.__apiquery('GET', '/osr/getorder', **{'ordernumber': ordernumber})
 
-        return json.dumps(r.data)
+        return rows
 
     def __insertintodatabase(self, line, table, ordernumber, orderdate, thirdparty):
         if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
@@ -75,11 +84,11 @@ class OrderSubmissionReport:
 
         li = LineItem(*line.split(','))
 
-        r = self.http.request('POST', f'http://{self.apiurl}/osr/addlineitem',
-            fields={'orderdate': orderdate, 'ordernumber': ordernumber, 'thirdparty': thirdparty, **li.getall()}
+        rows, status= self.__apiquery('POST', '/osr/addlineitem',
+            **{'orderdate': orderdate, 'ordernumber': ordernumber, 'thirdparty': thirdparty, **li.getall()}
             )
 
-        print(r.status)
+        print(status)
 
     def __processCSV(self, inputfile):
         ordernum = 0
@@ -90,9 +99,10 @@ class OrderSubmissionReport:
             for line in f:
 
                 #check if any dollar values exceed $999, if it does remove errant commas.
-                if( self.DOLLARVALUE.match(line) is not None ):
-                    print( self.DOLLARVALUE.group() )
-                    line = line.replace(m.group(), m.group().replace(',',''))
+                imparsabledollaramount = self.DOLLARAMOUNT.search(line)
+                if imparsabledollaramount is not None:
+                    print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
+                    line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
                 #strip all non-alphanumeric characters and whitespace greater than 2
 
@@ -154,12 +164,12 @@ class OrderSubmissionReport:
     def processCSV(self, inputfile):
         order = {}
         order['ordernum'], order['orderdate'], order['ordershipdate'] = self.__processCSV(inputfile)
-        ordernum = order['ordernum']
-        with open(f'{self.DIRECTORY}/order-{ordernum}.txt', 'w') as fp:
+        with open(f"{self.DIRECTORY}/order-{order['ordernum']}.txt", 'w') as fp:
             json.dump({**order, **self.__getorderfromdatabase(order['ordernum'])},fp,indent=2,separators=(',', ': '),sort_keys=True)
 
 
 if __name__=='__main__':
     osr = OrderSubmissionReport(
-        os.getenv('APIURL'))
+        os.getenv('APIURL'),
+        os.getenv('APIKEY'))
     osr.processCSV(sys.argv[1])
