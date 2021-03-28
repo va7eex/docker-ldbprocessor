@@ -126,7 +126,7 @@ services:
       - IMAP_PORT=${IMAP_PORT}
       - SYNCTIME=1
     volumes:
-      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_processor_ar
