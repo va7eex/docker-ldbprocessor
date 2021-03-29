@@ -227,8 +227,8 @@ def __ar_pricechange():
     cur.close()
 
     returnrows = {}
-    for row in rows:
-        returnrows[row['id']] = rows.pop(0)
+    for row in range(len(rows)):
+        returnrows[row] = rows.pop(0)
     return returnrows
 
 
