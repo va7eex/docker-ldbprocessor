@@ -67,7 +67,7 @@ class OrderSubmissionReport:
 
         # %d%b%y = 02DEC20
 
-        return datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y%m%d')
+        return datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y-%m-%d')
 
     def __getorderfromdatabase(self, ordernumber):
 

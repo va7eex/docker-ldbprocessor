@@ -135,7 +135,7 @@ class arinvoice:
                 if(line.find('Invoice Date:') > -1 ):
                     invoicedatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
         #            invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%Y-%m-%d %H:%M:%S.%f')
-                    invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y%m%d')
+                    invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
                     print(invoicedate)
                 if( line.strip() == emptyline.strip() and append ):
                     append=False
