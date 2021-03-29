@@ -190,7 +190,7 @@ def __ar_pricechange():
         oldprice = -1.0
         oldlastupdated = '1979-01-01 00:00:00'
         #print(len(results), results)
-        if len(results) == 0:
+        if not results:
             newitem = True
         else:
             oldprice = results['price']
