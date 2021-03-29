@@ -60,7 +60,7 @@ class OrderSubmissionReport:
         if r.status != 200:
             raise Exception(f'HTTP Response {r.status}')
         print(f'DEBUG: {r.data}')
-        rows = json.dumps(r.data)
+        rows = json.loads(r.data.decode('utf-8'))
         return rows, r.status
 
     def __converttimedatetonum(self, time):
