@@ -89,7 +89,7 @@ class OrderSubmissionReport:
         li = LineItem(*line.split(','))
 
         rows, status= self.__apiquery('POST', '/osr/addlineitem',
-            **{'orderdate': orderdate, 'ordernumber': ordernumber, 'thirdparty': thirdparty, **li.getall()}
+            **{'orderdate': orderdate, 'ordernumber': ordernumber, 'thirdparty': thirdparty, **li.getall(urlsafe=True)}
             )
 
         print(status)
