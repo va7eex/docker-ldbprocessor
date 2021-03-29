@@ -104,7 +104,7 @@ class arinvoice:
         if not os.path.exists(f'{self.DIRECTORY}/{date}_for-PO-import.txt'):
             with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
                 for row in rows.values():
-                    fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['qty'], row['unitprice'], row['productdescription'] ))
+                    fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['suquantity'], row['unitprice'], row['productdescription'] ))
 
 
     def __checkforbadbarcodes(self, invoicedate):
