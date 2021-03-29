@@ -46,7 +46,7 @@ class arinvoice:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
         if r.status != 200:
             raise Exception(f'HTTP Response {r.status}')
-        print(f'DEBUG: {r.data}')
+        
         rows = json.loads(r.data.decode('utf-8'))
         return rows, r.status
 
@@ -83,7 +83,7 @@ class arinvoice:
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
-            self.__apiquery('POST', '/ar/getinvoice', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
+            self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
         
         self.__itmdb_checkchange(invoicedate)
 
