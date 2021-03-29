@@ -39,8 +39,8 @@ def __buildtables():
         price FLOAT(11,4),
         oldprice FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
-        lastupdated DATE DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        oldlastupdated DATE,
+        lastupdated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        oldlastupdated TIMESTAMP,
         PRIMARY KEY (sku))''')
 
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
@@ -188,7 +188,7 @@ def __ar_pricechange():
         results = cur.fetchone()
         newitem = False
         oldprice = -1.0
-        oldlastupdated = 19790101
+        oldlastupdated = '1979-01-01 00:00:00'
         #print(len(results), results)
         if len(results) == 0:
             newitem = True
