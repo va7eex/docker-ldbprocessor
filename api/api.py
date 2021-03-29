@@ -290,7 +290,7 @@ def __ar_getinvoice():
     if not invoicedate and year and month and day:
         invoicedate = f'{year}-{month}-{day}'
 
-    query = f"SELECT DISTINCT id, sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
+    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
     cur.execute(query)
 
     invoice = {}
@@ -299,8 +299,8 @@ def __ar_getinvoice():
     connection.commit()
     cur.close()
 
-    for row in rows:
-        invoice[row['id']] = rows.pop(0)
+    for row in range(len(rows)):
+        invoice[row] = rows.pop(0)
 
     return invoice
 
