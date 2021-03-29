@@ -44,12 +44,12 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     restart: always
     ports:
-      - 5000:5000
+      - 5500:5000
     networks:
       - ldbbackend
     depends_on:
-      - ldb_redis_api
-      - ldb_database_api
+      - ldb_redis
+      - ldb_database
 
   #apps, will build to order
   ## Barcode processor
