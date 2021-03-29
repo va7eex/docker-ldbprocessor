@@ -187,6 +187,8 @@ def __ar_pricechange():
         cur.execute(query)
         newitem = False
         results = cur.fetchall()
+        oldprice = -1
+        oldlastupdated = 19790101
         #print(len(results), results)
         if len(results) == 0:
             newitem = True
