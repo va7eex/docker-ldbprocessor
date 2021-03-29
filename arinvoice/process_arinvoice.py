@@ -75,7 +75,10 @@ class arinvoice:
     def __itmdb_checkchange(self, invoicedate):
         rows, status = self.__apiquery('GET', '/ar/pricechange', **{'invoicedate': invoicedate})
 
+        print(len(rows))
+
         for row in rows.values():
+            print(**row)
             self.__addtopricechangereport( invoicedate, **row )
             
 
@@ -83,7 +86,7 @@ class arinvoice:
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
-            self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
+            rows, status = self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
         
         self.__itmdb_checkchange(invoicedate)
 
