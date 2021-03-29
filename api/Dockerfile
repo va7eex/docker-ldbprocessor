@@ -25,8 +25,9 @@ RUN apt update \
         python3-pip
 
 COPY requirements.txt ./
+COPY uwsgi.ini ./
 RUN pip3 install -r requirements.txt
 
 COPY *.py ./
 
-ENTRYPOINT python3 -u -m flask run --host=0.0.0.0
+ENTRYPOINT uwsgi ./uwsgi.ini

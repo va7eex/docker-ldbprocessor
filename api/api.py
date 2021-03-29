@@ -387,3 +387,6 @@ def __label_print():
     labelmaker.printlabel(name,sku,quantity)
 
     return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }
+
+if __name__ == "__main__":
+    app.run()

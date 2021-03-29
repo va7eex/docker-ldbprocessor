@@ -37,7 +37,6 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - FLASK_APP=api.py
       - MYSQL_IP=ldb_database_api
       - MYSQL_DB=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
