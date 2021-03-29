@@ -102,7 +102,7 @@ class arinvoice:
         print('Total Rows: %s'%len(rows))
 
         if not os.path.exists(f'{self.DIRECTORY}/{invoicedate}_for-PO-import.txt'):
-            with open(f'{self.DIRECTORY}/{dainvoicedatete}_for-PO-import.txt', 'a') as fp:
+            with open(f'{self.DIRECTORY}/{invoicedatete}_for-PO-import.txt', 'a') as fp:
                 for row in rows.values():
                     fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['suquantity'], row['suprice'], row['productdescription'] ))
         else:
