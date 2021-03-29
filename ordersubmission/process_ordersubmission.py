@@ -59,6 +59,7 @@ class OrderSubmissionReport:
 
         if r.status != 200:
             raise Exception(f'HTTP Response {r.status}')
+        print(f'DEBUG: {r.data}')
         rows = json.dumps(r.data)
         return rows, r.status
 
