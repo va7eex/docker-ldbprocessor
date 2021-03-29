@@ -90,7 +90,7 @@ class arinvoice:
 
         li = LineItem(*line.split(','))
         
-        self.__apiquery('GET', '/ar/addlineitem', **{'invoicedate': invoicedate, **li.getall()})
+        self.__apiquery('POST', '/ar/addlineitem', **{'invoicedate': invoicedate, **li.getall()})
 
 
     def __printinvoicetofile(self, date):
