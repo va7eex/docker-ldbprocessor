@@ -52,7 +52,11 @@ class OrderSubmissionReport:
 
     def __apiquery(self, method='GET', url='', **kwargs):
         print(f'API query to: http://{self.apiurl}{url}')
-        r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+        if self.apikey:
+            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+        else:
+            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
+
         if r.status != 200:
             raise Exception(f'HTTP Response {r.status}')
         rows = json.dumps(r.data)
