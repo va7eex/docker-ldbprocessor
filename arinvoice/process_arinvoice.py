@@ -154,8 +154,8 @@ class arinvoice:
                     print(line.strip())
 
         self.__checkforbadbarcodes( invoicedate )
-        self.__printinvoicetofile( invoicedate )
         self.__dopricechangelist( invoicedate )
+        self.__printinvoicetofile( invoicedate )
 
 
 if __name__=='__main__':
