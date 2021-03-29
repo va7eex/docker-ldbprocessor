@@ -188,7 +188,7 @@ def __ar_pricechange():
         results = cur.fetchone()
         newitem = False
         oldprice = -1.0
-        oldlastupdated = '1979-01-01 00:00:00'
+        oldlastupdated = '1979-01-01 01:01:01'
         #print(len(results), results)
         if not results:
             newitem = True
@@ -196,7 +196,7 @@ def __ar_pricechange():
             oldprice = results['price']
             oldlastupdated = results['lastupdated']
 
-        query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}, oldprice={oldprice}, oldlastupdated={oldlastupdated}'
+        query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}, oldprice={oldprice}, oldlastupdated=\'{oldlastupdated}\''
         cur.execute(query)
 
         # return {'newitem': newitem, 'sku': sku, 'price': price}
