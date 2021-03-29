@@ -269,7 +269,7 @@ def __ar_addlineitem():
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemAR(**restofrequest)
 
-    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},'{invoicedate}')"
+    query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},{invoicedate})"
     cur.execute(query)
     connection.commit()
     cur.close()
@@ -288,9 +288,9 @@ def __ar_getinvoice():
     day = escape(request.args.get('day',''))
 
     if not invoicedate and year and month and day:
-        invoicedate = f'{year}-{month}-{day}'
+        invoicedate = f'{year}{month}{day}'
 
-    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
+    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate={invoicedate}"
     cur.execute(query)
 
     invoice = {}
@@ -313,7 +313,7 @@ def __ar_findbadbarcodes():
     invoicedate = escape(request.args.get('invoicedate',''))
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
-    query = f'SELECT invoicelog.id, invoicelog.sku, invoicelog.productdescription FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate=\'{invoicedate}\' AND invoicelog.sku=iteminfolist.sku AND iteminfolist.badbarcode=1'
+    query = f'SELECT invoicelog.id, invoicelog.sku, invoicelog.productdescription FROM invoicelog, iteminfolist WHERE invoicelog.invoicedate={invoicedate} AND invoicelog.sku=iteminfolist.sku AND iteminfolist.badbarcode=1'
     cur.execute(query)
 
     rows = cur.fetchall()
@@ -333,17 +333,17 @@ def __misc_badbarcode():
 
     connection = mysql.connect()
     cur = connection.cursor()
+    sku = escape(request.args.get('sku',''))
+
     if request.method == 'POST':
         sku = escape(request.form.get('sku',''))
         badbarcode = escape(request.form.get('badbarcode',0))
         
-        query = f'UPDATE badbarcode={badbarcode} WHERE sku={sku} IN iteminfolist'
+        query = f'INSERT INTO iteminfolist (sku, badbarcode) VALUES ({sku},{badbarcode}) ON DUPLICATE KEY UPDATE badbarcode={badbarcode}'
         cur.execute(query)
         mysql.connect().commit()
 
-    sku = escape(request.args.get('sku',''))
-
-    query = f'SELECT sku, badbarcode IN iteminfolist WHERE sku={sku}'
+    query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
     cur.execute(query)
     result = cur.fetchone()
     connection.commit()

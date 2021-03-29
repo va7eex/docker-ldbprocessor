@@ -81,7 +81,7 @@ class arinvoice:
 
     def __dopricechangelist(self, invoicedate):
 
-        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': date})
+        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
             self.__apiquery('POST', '/ar/getinvoice', **{'sku': row['sku'], 'price': row['suprice']})
         
@@ -94,10 +94,10 @@ class arinvoice:
         self.__apiquery('POST', '/ar/addlineitem', **{'invoicedate': invoicedate, **li.getall(urlsafe=True)})
 
 
-    def __printinvoicetofile(self, date):
+    def __printinvoicetofile(self, invoicedate):
         print(f'Printing invoice {date} to file')
 
-        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': date})
+        rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
 
         print('Total Rows: %s'%len(rows))
 
@@ -105,7 +105,8 @@ class arinvoice:
             with open(f'{self.DIRECTORY}/{date}_for-PO-import.txt', 'a') as fp:
                 for row in rows.values():
                     fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['suquantity'], row['unitprice'], row['productdescription'] ))
-
+        else:
+            print('Error: PO File exists')
 
     def __checkforbadbarcodes(self, invoicedate):
         rows, status = self.__apiquery('GET', '/ar/findbadbarcodes', **{'invoicedate': invoicedate})
@@ -114,7 +115,7 @@ class arinvoice:
         for row in rows.values():
             if not row['success']: 
                 raise Exception()
-            self.http.request('GET', f'http://{self.apiurl}/labelmaker/print', fields={'apikey': self.apikey, **row})
+            self.__apiquery('GET', '/labelmaker/print', **row)
 
     def processCSV(self, inputfile):
         #this is what an empty line looks like
@@ -131,7 +132,7 @@ class arinvoice:
                 if(line.find('Invoice Date:') > -1 ):
                     invoicedatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
         #            invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%Y-%m-%d %H:%M:%S.%f')
-                    invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
+                    invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y%m%d')
                     print(invoicedate)
                 if( line.strip() == emptyline.strip() and append ):
                     append=False
