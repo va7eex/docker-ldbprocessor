@@ -44,8 +44,10 @@ class arinvoice:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
         else:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
-        if r.status != 200:
-            raise Exception(f'HTTP Response {r.status}')
+        if r.status >= 500:
+            raise Exception(f'Error on server: {r.status}')
+        elif r.status >= 400 and r.status < 500:
+            raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
         rows = json.loads(r.data.decode('utf-8'))
         return rows, r.status
@@ -86,7 +88,7 @@ class arinvoice:
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
-            rows, status = self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
+            rows, status = self.__apiquery('PUT', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
         
         self.__itmdb_checkchange(invoicedate)
 
@@ -118,7 +120,7 @@ class arinvoice:
         for row in rows.values():
             if not row['success']: 
                 raise Exception()
-            self.__apiquery('GET', '/labelmaker/print', **row)
+            self.__apiquery('POST', '/labelmaker/print', **row)
 
     def processCSV(self, inputfile):
         #this is what an empty line looks like
