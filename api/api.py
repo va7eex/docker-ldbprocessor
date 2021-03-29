@@ -273,7 +273,7 @@ def __ar_addlineitem():
     cur.execute(query)
     connection.commit()
     cur.close()
-    return query
+    return {'success': True}
 
 @app.route('/ar/getinvoice', methods=['GET'])
 #@use_kwargs({'invoicedate': fields.Str()})
