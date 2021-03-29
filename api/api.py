@@ -186,7 +186,7 @@ def __ar_pricechange():
         query = f'SELECT * FROM iteminfolist WHERE sku={sku}'
         cur.execute(query)
         newitem = False
-        results = cur.fetchall()
+        results = cur.fetchone()
         oldprice = -1.0
         oldlastupdated = 19790101
         #print(len(results), results)
