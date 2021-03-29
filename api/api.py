@@ -290,7 +290,7 @@ def __ar_getinvoice():
     if not invoicedate and year and month and day:
         invoicedate = f'{year}-{month}-{day}'
 
-    query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
+    query = f"SELECT DISTINCT id, sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate='{invoicedate}'"
     cur.execute(query)
 
     invoice = {}
