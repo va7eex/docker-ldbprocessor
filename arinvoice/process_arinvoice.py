@@ -78,7 +78,7 @@ class arinvoice:
         print(len(rows))
 
         for row in rows.values():
-            print(**row)
+            print(row)
             self.__addtopricechangereport( invoicedate, **row )
             
 
