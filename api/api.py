@@ -5,6 +5,7 @@ import os
 
 from flask import Flask
 from flask import request, current_app, g
+from flask import render_template
 from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
@@ -83,7 +84,7 @@ __buildtables()
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World!'
+    return render_template('index.html')
 
 @app.before_request
 def before_request():
@@ -374,17 +375,17 @@ def __label_print():
     else:
         return {'success': False, 'reason': 'No IP address on file'}
 
-    name = escape(request.args.get('name',''))
+    name = escape(request.form.get('name',''))
     productdescription = escape(request.args.get('productdescription',''))
     if not name and productdescription:
         name = productdescription
-    sku = escape(request.args.get('sku',''))
-    try:
-        quantity = int(escape(request.args.get('qty',12)))
-    except:
-        return {'success': False, 'reason': '\'qty\' not a number'}
 
-    labelmaker.printlabel(name,sku,quantity)
+    sku = escape(request.form.get('sku',''))
+    quantity = escape(request.form.get('qty','12'))
+    if not quantity: quantity = '12'
+
+    print(name, sku, quantity)
+    labelmaker.printlabel(name,sku,int(quantity))
 
     return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }
 
