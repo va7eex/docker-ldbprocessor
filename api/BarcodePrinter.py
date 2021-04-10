@@ -12,7 +12,7 @@ class LabelMaker:
 
     def __init__(self, ipaddress: str, port: int = 9100, metric: bool = False, dpi: int = 203,
                 width: float = 1, height: float = 0.5, margins: float = (1/16),
-                columns: int = 2, fontsize: int = 30):
+                columns: int = 2, fontsize: int = 30, description: str = ''):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -23,6 +23,10 @@ class LabelMaker:
         self.columns = columns
         self.metric=metric
         self.fontsize=fontsize
+        self.description = description
+
+    def getinfo(self):
+        return {'description': self.description, 'size': f'{self.width}x{self.height}', 'width': self.width, 'height': self.height, 'columns': self.columns}
 
     def printlabel(self, text: str, barcode: str = '', quantity: int = 12):
         zpl = ZPLDocument()

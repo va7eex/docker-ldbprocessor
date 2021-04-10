@@ -364,16 +364,29 @@ def barcodeinput():
 #
 # Label Makers
 #
+labelmakers = []
+def setupLabelMakers():
+    #TODO: make better
+    if os.getenv('LABEL_MAKER'):
+        labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410'))
+
+setupLabelMakers()
+
+@app.route('/labelmaker/info', methods=['GET'])
+def __label_info():
+    printerlist = {}
+    for lm in range(len(labelmakers)):
+        printerlist[lm] = labelmakers[lm].getinfo()
+
+    return printerlist
+
 
 @app.route('/labelmaker/print', methods=['POST'])
-#@use_kwargs({'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
+#@use_kwargs({'printer': fields.Int(), 'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
 def __label_print():
 
-    labelmaker = None
-    if os.getenv('LABEL_MAKER'):
-        labelmaker = LabelMaker(ipaddress=os.getenv('LABEL_MAKER'))
-    else:
-        return {'success': False, 'reason': 'No IP address on file'}
+    printer = escape(request.form.get('printer',0))
+    if not printer: printer = 0
 
     name = escape(request.form.get('name',''))
     productdescription = escape(request.args.get('productdescription',''))
@@ -385,7 +398,7 @@ def __label_print():
     if not quantity: quantity = '12'
 
     print(name, sku, quantity)
-    labelmaker.printlabel(name,sku,int(quantity))
+    labelmakers[int(printer)].printlabel(name,sku,int(quantity))
 
     return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }
 
