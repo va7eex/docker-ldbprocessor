@@ -2,6 +2,8 @@
 #!/bin/python3
 
 import os
+import csv
+from datetime import datetime
 
 from flask import Flask
 from flask import request, current_app, g
@@ -27,7 +29,7 @@ app.config['MYSQL_DATABASE_DB'] = os.getenv('MYSQL_DB')
 mysql = MySQL(cursorclass=DictCursor)
 mysql.init_app(app)
 
-REDIS_URL = f'redis://{os.getenv("REDIS_IP")}:{os.getenv("REDIS_PORT")}/0'
+app.config['REDIS_URL'] = f'redis://{os.getenv("REDIS_IP")}:{os.getenv("REDIS_PORT")}/0'
 redis_client = FlaskRedis(app)
 
 def __buildtables():
@@ -86,6 +88,22 @@ __buildtables()
 def hello_world():
     return render_template('index.html')
 
+@app.route('/ar')
+def arpage():
+    return render_template('ar.html')
+
+@app.route('/bc')
+def bcpage():
+    return render_template('bc.html')
+
+@app.route('/osr')
+def osrpage():
+    return render_template('osr.html')
+
+@app.route('/labelmaker')
+def labelmakerpage():
+    return render_template('lp.html')
+
 @app.before_request
 def before_request():
     g.connection = mysql.connect()
@@ -106,9 +124,59 @@ def teardown_request(error=None):
 # Barcode Processor
 #
 
-@app.route('/bc/add', methods=['POST'])
-def __bc_add():
+def __sumRedisValues( list ):
+    return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
+
+
+def __countBarcodes(scandate):
+    barcodes = {}
+    tally = {}
+    total = 0
+    for key in redis_client.scan_iter(str(scandate) + '*'):
+        print(key)
+        if not f'{scandate}_scanstats' in str(key):
+#            barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
+            tally[key] = __sumRedisValues(redis_client.hvals(key))
+            total += tally[key]
+    return barcodes, tally, total
+
+@app.route('/bc/scan', methods=['POST'])
+def __bc_scan():
+    upc = escape(request.form.get('upc',0))
+    scangroup = escape(request.form.get('scangroup',0))
+    addremove = escape(request.form.get('addremove', 'add'))
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
+
+    if addremove == 'remove':
+        if not redis_client.hexists(f'{datestamp}_{scangroup}',upc):
+            return
+        if int(redis_client.hget(f'{datestamp}_{scangroup}',upc)) > 2:
+            redis_client.hincrby(f'{datestamp}_{scangroup}', upc,-1)
+        elif (redis_client.hget(f'{datestamp}_{scangroup}',upc)) <= 1:
+            redis_client.hdel(f'{datestamp}_{scangroup}',upc)
+    else:
+        redis_client.hincrby(f'{datestamp}_{scangroup}', upc,1)
+
+    payload = {}
+    payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
+
+    return payload
+
+@app.route('/bc/getstatus', methods=['GET'])
+def __bc_getstatus():
+
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
+
+    payload = {}
+    payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
+
+    return payload
+
+
+@app.route('/bc/linksku', methods=['POST'])
+def __bc_linksku():
     pass
+    
 
 @app.route('/bc/del', methods=['DELETE'])
 def __bc_del():
@@ -345,10 +413,11 @@ def itemsearch():
     search = escape(request.args.get('search',''))
 
     query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE sku={search} OR upc={search}'
+    print(query)
     g.cur.execute(query)
 
-    print()
     rows = g.cur.fetchall()
+    print(rows)
     if len(rows) == 0:
         return 'None'
 
@@ -367,8 +436,19 @@ def barcodeinput():
 labelmakers = []
 def setupLabelMakers():
     #TODO: make better
-    if os.getenv('LABEL_MAKER'):
-        labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410'))
+   if os.getenv('LABEL_MAKER'):
+       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410'))
+
+    # with open('printers.csv', newline='') as csvfile:
+    #     printerreader = csv.reader(csvfile, delimiter=',', quotechar='"')
+    #     for row in printerreader:
+    #         print(row)
+    #         #ipaddress,port,description,width,height,metric,dpi,margins,columns,fontsize
+    #         labelmakers.append(LabelMaker(
+    #             ipaddress=row['ipaddress'], port=row['port'], metric=row['metric'], dpi=row['dpi'],
+    #             width=row['width'], height=row['height'], margins=row['margins'],
+    #             columns=row['columns'], fontsize=row['fontsize'], description=row['description']
+            # ))
 
 setupLabelMakers()
 

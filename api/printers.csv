@@ -1,0 +1,3 @@
+ipaddress,port,description,width,height,metric,dpi,margins,columns,fontsize
+"192.168.3.52",9100,"ZT410",1,0.5,false,203,1/16,2,30
+"192.168.3.53",9100,"ZD500",4,6,false,203,0,1,30

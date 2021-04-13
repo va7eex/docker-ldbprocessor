@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/base-min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <style scoped="">
+            .button-success,
+            .button-error,
+            .button-warning,
+            .button-secondary {
+                color: white;
+                border-radius: 4px;
+                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+            }
+    
+            .button-success {
+                background: rgb(28, 184, 65);
+                /* this is a green */
+            }
+    
+            .button-error {
+                background: rgb(202, 60, 60);
+                /* this is a maroon */
+            }
+    
+            .button-warning {
+                background: rgb(223, 117, 20);
+                /* this is an orange */
+            }
+    
+            .button-secondary {
+                background: rgb(66, 184, 221);
+                /* this is a light blue */
+            }
+        </style>
+        <script>
+            $(document).ready(function(){
+                $.get('/bc/getstatus', $(this).serialize(), function(response){
+                    $("#runningcount").val(response.total);
+                    return false
+                });
+                $('#barcodescan').submit(function(){
+                    var scangroup = $('#stacked-scangroup').val();
+                    $.post($(this).attr('action'), $(this).serialize(), function(response){
+                        $("#runningcount").val(response.total);
+                    },'json');
+                    //$.get('/search',$(this).serialize(), function(response){
+                    //    $('#stacked-sku').val(response.sku);
+                    //    $('#stacked-barcode-update').val(response.upc);
+                    //}, 'json')
+                    $(this).trigger("reset");
+                    $('#stacked-scangroup').val(scangroup);
+                    return false;
+                });
+                $('#productupdate').submit(function(){
+                    $.post($(this).attr('action'), $(this).serialize(), function(response){
+                    },'json');
+                    $(this).trigger("reset");
+                    return false;
+                });
+                $('#dellist').submit(function(){
+                    var answer = window.confirm("Delete all?");
+                    if (answer) {
+                        $.post($(this).attr('action'), $(this).serialize(), function(response){
+                        },'json');
+                    }
+                    else {
+                        //some code
+                    }
+                    return false;
+                });
+            });
+        </script>
+        <br>
+        <div>
+        <form id='barcodescan' class="pure-form pure-form-aligned" action="/bc/scan" method="post">
+            <fieldset>
+                <legend id="barcodelegend">Barcode Scanner</legend>
+                <div class="pure-control-group">
+                    <label for="stacked-barcode">Barcode</label>
+                    <input type="text" id="stacked-barcode" name="upc" placeholder="Barcode" required="" autofocus/>
+                    <span class="pure-form-message-inline">Scan one barcode per box, scan the largest barcode on the box.</span>
+                </div>
+                <div class="pure-control-group">
+                    <label for="stacked-scangroup">Scan Group</label>
+                    <input type="number" id="stacked-scangroup" name="scangroup" placeholder="0" value="0" min="0" max="255" required=""/>
+                    <span class="pure-form-message-inline">Used to differentiate between groups of objects</span>
+                </div>
+                <div class="pure-controls">
+                    <label for="checkbox-radio-option-two" class="pure-radio">
+                        <input type="radio" id="checkbox-radio-option-two" name="addremove" value="add" checked="" /> Add</label>
+                    <label for="checkbox-radio-option-three" class="pure-radio">
+                        <input type="radio" id="checkbox-radio-option-three" name="addremove" value="remove" /> Remove</label>
+                        <button type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
+                        <button type="submit" class="pure-button" name="noscan" formnovalidate>NO SCAN</button>
+                </div>
+            </fieldset>
+        </form>
+        <form id='productupdate' class="pure-form pure-form-aligned" action="/bc/linksku", method="get">
+            <fieldset>
+                <legend>SKU Update</legend>
+
+                <div class="pure-control-group">
+                <label for='stacked-barcode-update'>Barcode</label>
+                    <input type="text" id='stacked-barcode-update' name='barcode' placeholder="Barcode" required=""/>
+                <label for='stacked-sku'>SKU</label>
+                    <input type="text" id='stacked-sku' name='sku' placeholder="SKU" required=""/>
+                </div>
+                <div class="pure-controls">
+                <button type="submit" class="pure-button pure-button-primary" name="submit">Submit</button>
+                </div>
+            </fieldset>
+        </form>
+        <form id='dellist' class="pure-form pure-form-aligned" action="/bc/clearall", method="delete">
+            <fieldset>
+                <legend>Delete:</legend>
+                <div class="pure-controls">
+                <button type="submit" class="pure-button button-error" background="0xca3c3c">Delete List</button>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    </body>
+</html>
