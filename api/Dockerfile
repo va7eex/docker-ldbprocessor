@@ -27,7 +27,8 @@ RUN apt update \
 COPY requirements.txt ./
 COPY uwsgi.ini ./
 RUN pip3 install -r requirements.txt
-COPY html/*.html ./templates/
+COPY html ./templates/
+COPY static ./static/
 COPY printers.csv ./
 
 COPY *.py ./

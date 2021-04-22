@@ -1,25 +1,40 @@
-<html>
-    <header>
-    </header>
-    <body>
-        <form action="/labelmaker/print" method="post">
-          <ul>
-          <li>
-            <label for="sku">SKU:</label>
-            <input type="text" id="sku" name="sku">
-          </li>
-          <li>
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name">
-          </li>
-          <li>
-            <label for="qty">Quantity:</label>
-            <input type="text" id="qty" name="qty">
-          </li>
-          <li class="button">
-              <button type="submit">Print</button>
-            </li>
-         </ul>
-      </form>
-    </body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+    <script>
+            $(document).ready(function(){
+                $('#labelmaker-print').submit(function(){
+                    $.post($(this).attr('action'), $(this).serialize(), function(response){
+                    },'json');
+                    return false;
+                });
+            });
+        </script>
+    <form id='labelmaker-print' class="pure-form pure-form-aligned" action="/labelmaker/print" method="post">
+      <fieldset>
+          <legend>Printer</legend>
+          <div class="pure-control-group">
+              <label for="lp-sku">SKU *</label>
+              <input type="text" id="lp-sku" name='sku' required="" />
+          </div>
+          <div class="pure-control-group">
+              <label for="lp-description">Description</label>
+              <input type="text" id="lp-description" name='productdescription' />
+          </div>
+          <div class="pure-control-group">
+            <label for="lp-qty">Quantity</label>
+            <input type="number" id="lp-qty" value='12' name='qty'/>
+        </div>
+          <div class="pure-control-group">
+              <label for="multi-state">Printer</label>
+              <select id="multi-state" class="pure-input-1-2" name='printer'>
+                {% for printer in printers %}
+                <option value="{{ printer.index }}">{{ printer.description }}, {{ printer.location }}</option>
+                {% endfor %}
+              </select>
+          </div>
+          <div class='pure-controls'>
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+          </div>
+      </fieldset>
+  </form>
+{% endblock %}

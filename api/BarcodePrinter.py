@@ -12,7 +12,7 @@ class LabelMaker:
 
     def __init__(self, ipaddress: str, port: int = 9100, metric: bool = False, dpi: int = 203,
                 width: float = 1, height: float = 0.5, margins: float = (1/16),
-                columns: int = 2, fontsize: int = 30, description: str = ''):
+                columns: int = 2, fontsize: int = 30, description: str = '', location: str = ''):
         #note: we're defaulting to uline S-10765 dimensions
         self.height = height
         self.width = width
@@ -24,6 +24,7 @@ class LabelMaker:
         self.metric=metric
         self.fontsize=fontsize
         self.description = description
+        self.location = location
 
     def getinfo(self):
         return {'description': self.description, 'size': f'{self.width}x{self.height}', 'width': self.width, 'height': self.height, 'columns': self.columns}
@@ -32,6 +33,7 @@ class LabelMaker:
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
+        x_start_bc = self.margins*(self.dpi*0)-5
         y_start = self.margins*2*self.dpi
         x_offset = self.dpi * (1/16)
         y_offset = self.dpi * (1/16)
@@ -40,10 +42,11 @@ class LabelMaker:
 
         for c in range(self.columns):
             x_start += (self.width+self.margins)*self.dpi*c
+            x_start_bc += (self.width+self.margins)*self.dpi*c
             zpl.add_field_origin(int(x_start+(c*x_offset)), int(y_start))
             zpl.add_field_data(text[:14])
-            zpl.add_field_origin(int(x_start + x_offset+(c*x_offset)), int(y_start + y_offset*2.5))
-            bc = Code128_Barcode(f'{barcode}', 'N', 30, 'Y')
+            zpl.add_field_origin(int(x_start_bc + x_offset+(c*x_offset)), int(y_start + y_offset*2.5))
+            bc = Code128_Barcode(f'{barcode}', 'N', 25, 'Y')
             zpl.add_barcode(bc)
 
         zpl.add_print_quantity(int(int(quantity)/self.columns))

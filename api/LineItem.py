@@ -27,7 +27,7 @@ class LineItem:
         retstr = ''
         for v in self.getvalues():
             if type(v) == str:
-                retstr += f"'{v}',"
+                retstr += f'\'{v}\','
             else:
                 retstr += f'{v},'
         return retstr[:-1]
@@ -48,7 +48,7 @@ class LineItem:
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
             if type(v) == str:
-                v = re.sub('([^ \sa-zA-Z0-9.]| {2,})','',v)
+                v = re.sub(r'([^ \sa-zA-Z0-9.]| {2,})','',v)
 #            print(f'{k}: {v}')
             if type(v) == int or type(v) == float:
                 v = abs(v)
@@ -116,7 +116,7 @@ class LineItemAR(LineItem):
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
             if type(v) == str:
-                v = re.sub('([^ \sa-zA-Z0-9.]| {2,})','',v)
+                v = re.sub(r'([^ \sa-zA-Z0-9.]| {2,})','',v)
 #            print(f'{k}: {v}')
             if type(v) == int or type(v) == float:
                 v = abs(v)
@@ -165,7 +165,7 @@ class LineItemOS(LineItem):
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
             if type(v) == str:
-                v = re.sub('([^ \sa-zA-Z0-9.]| {2,})','',v)
+                v = re.sub(r'([^ \sa-zA-Z0-9.]| {2,})','',v)
 #            print(f'{k}: {v}')
             if type(v) == int or type(v) == float:
                 v = abs(v)

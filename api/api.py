@@ -3,11 +3,14 @@
 
 import os
 import csv
+import string
+import random
 from datetime import datetime
 
 from flask import Flask
 from flask import request, current_app, g
 from flask import render_template
+from flask import session, redirect, url_for
 from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
@@ -21,6 +24,10 @@ from LineItem import LineItemOS
 from LineItem import LineItemAR
 
 app = Flask(__name__)
+#testing purposes only PLEASE CHANGE IN PROD
+#this is literally the example key
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+
 app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_IP')
 app.config['MYSQL_DATABASE_PORT'] = int(os.getenv('MYSQL_PORT'))
 app.config['MYSQL_DATABASE_USER'] = os.getenv('MYSQL_USER')
@@ -94,6 +101,8 @@ def arpage():
 
 @app.route('/bc')
 def bcpage():
+    if not 'scanner_terminal' in session:
+        return redirect(url_for('__bc_register'))
     return render_template('bc.html')
 
 @app.route('/osr')
@@ -124,6 +133,22 @@ def teardown_request(error=None):
 # Barcode Processor
 #
 
+@app.route('/bc/register', methods=['GET','POST'])
+def __bc_register():
+    if request.method == 'GET':
+        if escape(request.args.get('check','')):
+            return {'success': bool('scanner_terminal' in session) }
+        if not 'scanner_terminal' in session:
+            return render_template('bcregister.html')
+        else:
+            return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
+
+
+    if request.method == 'POST':
+        #register with random string if nothing else.
+        session['scanner_terminal'] = request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8)))
+        return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
+
 def __sumRedisValues( list ):
     return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
 
@@ -132,7 +157,7 @@ def __countBarcodes(scandate):
     barcodes = {}
     tally = {}
     total = 0
-    for key in redis_client.scan_iter(str(scandate) + '*'):
+    for key in redis_client.scan_iter(str(scandate) + 'ingest*'):
         print(key)
         if not f'{scandate}_scanstats' in str(key):
 #            barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
@@ -142,25 +167,30 @@ def __countBarcodes(scandate):
 
 @app.route('/bc/scan', methods=['POST'])
 def __bc_scan():
+    if not 'scanner_terminal' in session:
+        return{ 'success': False, 'reason': 'not registered'}
+
     upc = escape(request.form.get('upc',0))
     scangroup = escape(request.form.get('scangroup',0))
     addremove = escape(request.form.get('addremove', 'add'))
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
 
-    if addremove == 'remove':
-        if not redis_client.hexists(f'{datestamp}_{scangroup}',upc):
-            return
-        if int(redis_client.hget(f'{datestamp}_{scangroup}',upc)) > 2:
-            redis_client.hincrby(f'{datestamp}_{scangroup}', upc,-1)
-        elif (redis_client.hget(f'{datestamp}_{scangroup}',upc)) <= 1:
-            redis_client.hdel(f'{datestamp}_{scangroup}',upc)
+    redishashkey = f'{datestamp}ingest_{escape(session["scanner_terminal"])}_{scangroup}'
+
+    if 'remove' in addremove:
+        if not redis_client.hexists(redishashkey,upc):
+            return {'success': True, 'reason': 'nothing to do'}
+        if int(redis_client.hget(redishashkey,upc)) > 2:
+            redis_client.hincrby(redishashkey, upc,-1)
+        elif (redis_client.hget(redishashkey,upc)) <= 1:
+            redis_client.hdel(redishashkey,upc)
     else:
-        redis_client.hincrby(f'{datestamp}_{scangroup}', upc,1)
+        redis_client.hincrby(redishashkey, upc,1)
 
     payload = {}
     payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
 
-    return payload
+    return {'success': True, **payload}
 
 @app.route('/bc/getstatus', methods=['GET'])
 def __bc_getstatus():
@@ -410,7 +440,10 @@ def __misc_badbarcode():
 
 @app.route('/search', methods=['GET'])
 def itemsearch():
-    search = escape(request.args.get('search',''))
+    search = escape(request.args.get('upc',''))
+
+    if not search.isdigit():
+        return {'success': False}
 
     query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE sku={search} OR upc={search}'
     print(query)
@@ -419,7 +452,7 @@ def itemsearch():
     rows = g.cur.fetchall()
     print(rows)
     if len(rows) == 0:
-        return 'None'
+        return {'success': False}
 
     return rows[len(rows)-1]
     #sku, upc, qty, productdescription = rows[len(rows)-1]
@@ -437,7 +470,9 @@ labelmakers = []
 def setupLabelMakers():
     #TODO: make better
    if os.getenv('LABEL_MAKER'):
-       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410'))
+       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',location='Office'))
+       labelmakers.append(LabelMaker(ipaddress='127.0.0.1',description='Test ZD420',location='Storage'))
+       labelmakers.append(LabelMaker(ipaddress='127.0.0.1',description='Test LP2844',location='Warehouse'))
 
     # with open('printers.csv', newline='') as csvfile:
     #     printerreader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -451,6 +486,14 @@ def setupLabelMakers():
             # ))
 
 setupLabelMakers()
+
+@app.route('/lp')
+def lppage():
+    printers = []
+    for p in range(len(labelmakers)):
+        printers.append({'index': p, 'description': labelmakers[p].description, 'location': labelmakers[p].location})
+    return render_template('labelmaker.html', printers=printers )
+
 
 @app.route('/labelmaker/info', methods=['GET'])
 def __label_info():
@@ -469,13 +512,15 @@ def __label_print():
     if not printer: printer = 0
 
     name = escape(request.form.get('name',''))
-    productdescription = escape(request.args.get('productdescription',''))
+    productdescription = escape(request.form.get('productdescription',''))
     if not name and productdescription:
         name = productdescription
 
     sku = escape(request.form.get('sku',''))
     quantity = escape(request.form.get('qty','12'))
     if not quantity: quantity = '12'
+    if not quantity.isdigit(): quantity = '12'
+    if quantity: quantity = f'{abs(int(quantity))}'
 
     print(name, sku, quantity)
     labelmakers[int(printer)].printlabel(name,sku,int(quantity))

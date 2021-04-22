@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+        <form id='registerterminal' class="pure-form pure-form-aligned" action="/bc/register" method="post">
+            <fieldset>
+                <legend id="registerterminal-legend">Register Terminal</legend>
+                <div class="pure-control-group">
+                    <label for="registerterminal-name">Barcode</label>
+
+                    {% if scanner_terminal %}
+                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" required="" value={{ scanner_terminal }} autofocus/>
+                    {% else %}
+                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" required="" autofocus/>
+                    {% endif %}
+                    <span class="pure-form-message-inline desktop-only">Backend name of this device.</span>
+                </div>
+                <div class='pure-controls'>
+                        <button id='registerterminal-submit' type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
+                </div>
+            </fieldset>
+        </form>
+        {% if scanner_terminal %}
+        <form class="pure-form pure-form-aligned" action="/bc" method="get">
+            <fieldset>
+                <div class='pure-controls'>
+                        <button id='registerterminal-submit' type="submit" class="pure-button pure-button-primary">Get Scanning!</button>
+                </div>
+            </fieldset>
+        </form>
+        {% endif %}
+{% endblock %}
