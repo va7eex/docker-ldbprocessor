@@ -15,6 +15,8 @@ from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
 
+from flask_selfdoc import Autodoc
+
 from schema import Schema, And, Use, Optional, SchemaError
 
 from markupsafe import escape
@@ -24,6 +26,7 @@ from LineItem import LineItemOS
 from LineItem import LineItemAR
 
 app = Flask(__name__)
+auto = Autodoc(app)
 #testing purposes only PLEASE CHANGE IN PROD
 #this is literally the example key
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
@@ -45,7 +48,7 @@ def __buildtables():
     cur = connection.cursor()
 
     cur.execute('''CREATE TABLE IF NOT EXISTS iteminfolist
-        (sku MEDIUMINT(8) ZEROFILL UNIQUE,
+        (sku MEDIUMINT(8) ZEROFILL,
         price FLOAT(11,4),
         oldprice FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
@@ -91,18 +94,22 @@ def __buildtables():
 
 __buildtables()
 
+@app.route('/documentation')
+def documentation():
+    return auto.html()
+
 @app.route('/')
-def hello_world():
+def page_index():
     return render_template('index.html')
 
 @app.route('/ar')
-def arpage():
+def page_ar():
     return render_template('ar.html')
 
 @app.route('/bc')
-def bcpage():
+def page_bc():
     if not 'scanner_terminal' in session:
-        return redirect(url_for('__bc_register'))
+        return redirect(url_for('page_bc_register'))
     return render_template('bc.html')
 
 @app.route('/osr')
@@ -110,7 +117,7 @@ def osrpage():
     return render_template('osr.html')
 
 @app.route('/labelmaker')
-def labelmakerpage():
+def page_labelmaker():
     return render_template('lp.html')
 
 @app.before_request
@@ -134,7 +141,15 @@ def teardown_request(error=None):
 #
 
 @app.route('/bc/register', methods=['GET','POST'])
-def __bc_register():
+@auto.doc(expected_type='application/json')
+def page_bc_register():
+    """Register endpoint with a mostly-unique name.
+
+    GET: Check if endpoint registered
+    POST: Set endpoint name.
+
+    
+    """
     if request.method == 'GET':
         if escape(request.args.get('check','')):
             return {'success': bool('scanner_terminal' in session) }
@@ -166,7 +181,9 @@ def __countBarcodes(scandate):
     return barcodes, tally, total
 
 @app.route('/bc/scan', methods=['POST'])
-def __bc_scan():
+@auto.doc(expected_type='application/json')
+def page_bcscan():
+    """Scan into master record for today."""
     if not 'scanner_terminal' in session:
         return{ 'success': False, 'reason': 'not registered'}
 
@@ -193,7 +210,9 @@ def __bc_scan():
     return {'success': True, **payload}
 
 @app.route('/bc/getstatus', methods=['GET'])
+@auto.doc(expected_type='application/json')
 def __bc_getstatus():
+    """Returns data related to barcode scans."""
 
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
 
@@ -204,19 +223,23 @@ def __bc_getstatus():
 
 
 @app.route('/bc/linksku', methods=['POST'])
+@auto.doc()
 def __bc_linksku():
     pass
     
 
 @app.route('/bc/del', methods=['DELETE'])
+@auto.doc()
 def __bc_del():
     pass
 
 @app.route('/bc/new', methods=['POST'])
+@auto.doc()
 def __bc_new():
     pass
 
 @app.route('/bc/get', methods=['GET', 'POST'])
+@auto.doc()
 def __bc_get():
     pass
 
@@ -225,28 +248,66 @@ def __bc_get():
 #OrderSubmission
 #
 
-@app.route('/osr/getorder', methods=['GET'])
-#@use_kwargs({'ordernumber': fields.Str(), 'thirdparty': fields.Bool()})
-def __osr_getorder():
+@app.route('/osr/vieworder')
+def page_osr_vieworder():
+    """Return everything."""
+    query = f'SELECT DISTINCT orderdate FROM orderlog'
+    g.cur.execute(query)
+    rows = g.cur.fetchall()
+    
+    return render_template('vieworder.html', dates=rows)
 
-    ordernumber = escape(request.args.get('ordernumber',''))
-    thirdparty = escape(request.args.get('thirdparty',''))
+@app.route('/osr/getorderdates')
+@auto.doc(expected_type='application/json')
+def __osr_georderdates():
+    """Returns the date of all Order Submission Reports on record."""
+    query = f'SELECT DISTINCT orderdate FROM orderlog'
+    g.cur.execute(query)
+    rows = g.cur.fetchall()
+
+    returnrows = {}
+    for row in range(len(rows)):
+        returnrows[row] = rows.pop(0)
+    return returnrows
+
+@app.route('/osr/getordernumber')
+@auto.doc(expected_type='application/json', args={
+    'orderdate': 'Date in YYYY-MM-DD'
+})
+def __osr_getordernumber():
+    """Returns the Order Number(s) for a given date.
+
+    :param str orderdate: Date of order, YYYY-MM-DD.
+    """
     orderdate = escape(request.args.get('orderdate',''))
 
-    if orderdate:
-        query = f'SELECT DISTINCT ordernumber FROM orderlog WHERE orderdate={orderdate}'
-        g.cur.execute(query)
-        rows = g.cur.fetchall()
-        returnrows = {}
-        returnrows['orderdate'] = orderdate
-        returnrows['ordernumber'] = []
-        for row in rows:
-            returnrows['ordernumber'].append(row['ordernumber'])
-        return returnrows
+    query = f'SELECT DISTINCT ordernumber FROM orderlog WHERE orderdate={orderdate}'
+    g.cur.execute(query)
+    rows = g.cur.fetchall()
+    returnrows = {}
+    returnrows['orderdate'] = orderdate
+    returnrows['ordernumber'] = []
+    for row in rows:
+        returnrows['ordernumber'].append(row['ordernumber'])
+    return returnrows
 
+@app.route('/osr/getorder', methods=['GET'])
+@auto.doc(expected_type='application/json', args={
+    'ordernumber': 'Order number to retrieve',
+    'thirdparty': 'Include thirdparty warehouse suppliers'
+})
+#@use_kwargs({'ordernumber': fields.Str(), 'thirdparty': fields.Bool()})
+def __osr_getorder():
+    """Returns the full order details for a given Order Submission Report
+
+    :param int ordernumber: Order number of order to retrieve.
+    :param bool thirdparty: Return items stocked at third-party warehouses.
+    """
+    ordernumber = escape(request.args.get('ordernumber',''))
+    thirdparty = escape(request.args.get('thirdparty',''))
     query = f'SELECT id,sku,upc,productdescription,sellingunitsize,uom,qty,thirdparty FROM orderlog WHERE ordernumber={ordernumber}'
     if thirdparty:
-        query += ' AND thirdparty={thirdparty}'
+        query += ' AND thirdparty=1'
     g.cur.execute(query)
     rows = g.cur.fetchall()
 
@@ -260,8 +321,14 @@ def __osr_getorder():
     return { **returnrows, **details}
 
 @app.route('/osr/addlineitem', methods=['POST'])
+@auto.doc(expected_type='application/json', args={
+    'ordnum': 'Order Number on Order Submission Report',
+    'orddate': 'Order Date on Order Submission Report',
+    'thirdparty': 'Whether item is in the \'Thirdparty Wholesalers\' table of Order Submission Report'
+})
 def __osr_addlineitem():
-    
+    """Add a line item from an Order Submission Report to the database.
+    """
     ordnum = escape(request.args.get('ordnum',''))
     orddate = escape(request.args.get('orddate',''))
     thirdparty = escape(request.args.get('thirdparty',''))
@@ -279,8 +346,19 @@ def __osr_addlineitem():
 #
 
 @app.route('/ar/pricechange', methods=['GET','PUT'])
+@auto.doc(expected_type='application/json', args={
+    'invoicedate': 'Date of invoice in YYYY-MM-DD',
+    'sku': 'SKU of item',
+    'price': 'Price of item, float'
+})
 #@use_kwargs({'sku': fields.Str()})
 def __ar_pricechange():
+    """Perform a price comparison/change of an item.
+
+    :param str invoicedate: Date of invoice, YYYY-MM-DD.
+    :param int sku: SKU of item.
+    :param float price: Price of item.
+    """
 
     if request.method == 'PUT':
 
@@ -331,8 +409,23 @@ def __ar_pricechange():
 
 
 @app.route('/ar/getitem',methods=['GET'])
+@auto.doc(expected_type='application/json', args={
+    'sku': 'SKU',
+    'allitems': 'Select all instances of this SKU, true/false, default false',
+    'startdate': 'Select all instances of this SKU after a specific date, YYYY-MM-DD',
+    'enddate': 'Select all instances of this SKU before a specific date, YYYY-MM-DD'
+})
 #@use_kwargs({'sku': fields.Int(), 'all': fields.Bool()})
 def __ar_getitem():
+    """Search for any/all occurances of a given SKU received in an AR invoice.
+
+    If nothing but sku is specified, this will return the latest occurance of sku.
+
+    :param int sku: SKU to look for.
+    :param bool allitems: Return all items.
+    :param str startdate: Return an array of items starting at YYYY-MM-DD.
+    :param str enddate: Return an array of items ending at YYYY-MM-DD.
+    """
     
     sku = escape(request.args.get('sku',''))
     allitems = escape(request.args.get('all','false'))
@@ -359,8 +452,17 @@ def __ar_getitem():
 
 
 @app.route('/ar/addlineitem', methods=['POST'])
+@auto.doc(expected_type='application/json', args={
+    'invoicedate': 'Date in YYYY-MM-DD',
+    '**kwargs': 'Please refer to the lineitem class'
+})
 #@use_kwargs({'invoicedate': fields.Str(), 'rawdata': fields.Bool(), 'data': fields.Str()})
 def __ar_addlineitem():
+    """Add a lineitem from an AR invoice.
+
+    :param str invoicedate: Date AR invoice received. YYYY-MM-DD.
+    :param **kwargs: See LineItemAR class for details.
+    """
 
     invoicedate = escape(request.form.get('invoicedate',''))
     restofrequest = request.form.to_dict(flat=True)
@@ -371,8 +473,21 @@ def __ar_addlineitem():
     return {'success': True}
 
 @app.route('/ar/getinvoice', methods=['GET'])
+@auto.doc(expected_type='application/json', getargs={
+            'invoicedate': 'Date in YYYY-MM-DD',
+            'year': 'Optional, only used if invoicedate is missing, format: YYYY',
+            'month': 'Optional, only used if invoicedate is missing, format: MM',
+            'day': 'Optional, only used if invoicedate is missing, format: DD'
+            })
 #@use_kwargs({'invoicedate': fields.Str()})
 def __ar_getinvoice():
+    """Returns full AR Invoice as processed in JSON format.
+
+    :param str invoicedate: Date to query in YYYY-MM-DD.
+    :param int year: Optional, only used if invoicedate is missing, format: YYYY.
+    :param int month: Optional, only used if invoicedate is missing, format: MM.
+    :param int day: Optional, only used if invoicedate is missing, format: DD.
+    """
 
     invoicedate = escape(request.args.get('invoicedate',''))
     year = escape(request.args.get('year',''))
@@ -380,7 +495,7 @@ def __ar_getinvoice():
     day = escape(request.args.get('day',''))
 
     if not invoicedate and year and month and day:
-        invoicedate = f'{year}{month}{day}'
+        invoicedate = f'{year:04}-{month:02}-{day:02}'
 
     query = f"SELECT DISTINCT sku, suprice, suquantity, productdescription, refnum FROM invoicelog WHERE invoicedate=\'{invoicedate}\'"
     g.cur.execute(query)
@@ -395,7 +510,14 @@ def __ar_getinvoice():
     return invoice
 
 @app.route('/ar/findbadbarcodes', methods=['GET'])
+@auto.doc(expected_type='application/json', args={
+            'invoicedate': 'Date in YYYY-MM-DD'
+            })
 def __ar_findbadbarcodes():
+    """Returns SKUs marked as \'badbarcode\' based on date.
+    
+    :param date invoicedate: Date query in YYYY-MM-DD
+    """
 
     invoicedate = escape(request.args.get('invoicedate',''))
 
@@ -413,18 +535,52 @@ def __ar_findbadbarcodes():
 # Misc
 #
 
-@app.route('/misc/badbarcode', methods=['GET','POST'])
-def __misc_badbarcode():
+@app.route('/misc/itemmod', methods=['GET'])
+@auto.doc()
+def page_itemmod():
+    """View a SKU's non-AR/OSR attributes.
 
-    sku = escape(request.args.get('sku',''))
+    :param int sku: The SKU to view.
+    """
+
+    sku = escape(request.args.get('sku',0))
+    rows = {}
+    if sku:
+        query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
+        g.cur.execute(query)
+
+        rows = g.cur.fetchone()
+        print(rows)
+        if not bool(rows):
+            rows = {'sku':0, 'productdescription': '', 'badbarcode': False}
+    return render_template('itemmodify.html', **rows)
+
+
+@app.route('/misc/badbarcode', methods=['GET','POST'])
+@auto.doc(expected_type='application/json',args={
+            'sku': 'Barcode printed on label',
+            'badbarcode': '0/1, default 0'
+            })
+def __misc_badbarcode():
+    """Gets or Sets the barcode-okayness of a SKU.
+
+    This will return the barcode state of a SKU in a GET message, and will set the barcode state of a SKU in a POST message.
+
+    :param int sku: The SKU to view/modify
+    :param int badbarcode: POST only. Set to 1 to indicate true.
+    
+    """
+
+    sku = escape(request.args.get('sku',0))
 
     if request.method == 'POST':
-        sku = escape(request.form.get('sku',''))
-        badbarcode = escape(request.form.get('badbarcode',0))
+        sku = escape(request.form.get('sku',0))
+        badbarcode = int(escape(request.form.get('badbarcode',0)))
+        print(f'badbarcode={bool(badbarcode)}')
         
-        query = f'INSERT INTO iteminfolist (sku, badbarcode) VALUES ({sku},{badbarcode}) ON DUPLICATE KEY UPDATE badbarcode={badbarcode}'
+        query = f'INSERT INTO iteminfolist (sku, badbarcode) VALUES ({sku},{bool(badbarcode)}) ON DUPLICATE KEY UPDATE badbarcode={bool(badbarcode)}'
+        print(query)
         g.cur.execute(query)
-        mysql.connect().commit()
 
     query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
     g.cur.execute(query)
@@ -439,7 +595,12 @@ def __misc_badbarcode():
 #
 
 @app.route('/search', methods=['GET'])
+@auto.doc(expected_type='application/json')
 def itemsearch():
+    """Returns OSR data based on SKU or UPC
+    
+    :param str upc: Can be either SKU or UPC.
+    """
     search = escape(request.args.get('upc',''))
 
     if not search.isdigit():
@@ -460,6 +621,7 @@ def itemsearch():
     #return {'sku': sku, 'upc':upc, 'productdescription': productdescription}
 
 @app.route('/barcodeinput', methods=['POST'])
+@auto.doc(expected_type='application/json')
 def barcodeinput():
     input = escape(request.args.get('bc'))
 
@@ -468,11 +630,11 @@ def barcodeinput():
 #
 labelmakers = []
 def setupLabelMakers():
+    """Generates label makers."""
     #TODO: make better
-   if os.getenv('LABEL_MAKER'):
+    if os.getenv('LABEL_MAKER'):
        labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',location='Office'))
-       labelmakers.append(LabelMaker(ipaddress='127.0.0.1',description='Test ZD420',location='Storage'))
-       labelmakers.append(LabelMaker(ipaddress='127.0.0.1',description='Test LP2844',location='Warehouse'))
+       labelmakers.append(LabelMaker(ipaddress='192.168.3.138',description='Test LP2824',width=2.0, height=1.0,columns=1, location='Storage'))
 
     # with open('printers.csv', newline='') as csvfile:
     #     printerreader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -488,7 +650,9 @@ def setupLabelMakers():
 setupLabelMakers()
 
 @app.route('/lp')
+@auto.doc()
 def lppage():
+    """GUI page for accessing available label printers."""
     printers = []
     for p in range(len(labelmakers)):
         printers.append({'index': p, 'description': labelmakers[p].description, 'location': labelmakers[p].location})
@@ -496,7 +660,9 @@ def lppage():
 
 
 @app.route('/labelmaker/info', methods=['GET'])
+@auto.doc(expected_type='application/json', args={None})
 def __label_info():
+    """Returns a list of available label makers by index."""
     printerlist = {}
     for lm in range(len(labelmakers)):
         printerlist[lm] = labelmakers[lm].getinfo()
@@ -505,10 +671,28 @@ def __label_info():
 
 
 @app.route('/labelmaker/print', methods=['POST'])
+@auto.doc(expected_type='application/json', args={
+            'printer': 'Index of printer from /labelmaker/info',
+            'sku': 'Barcode printed on label',
+            'name': 'Plaintext printed on label',
+            'productdescription': 'alt-name for \'name\'',
+            'qty': 'Quantity of labels printed'
+            })
 #@use_kwargs({'printer': fields.Int(), 'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
-def __label_print():
 
-    printer = escape(request.form.get('printer',0))
+def __label_print():
+    """
+    Performs a print function on a designated printer.
+
+    :param int printer: The index of a printer given by /labelmaker/info
+    :param str name: Plaintext description to be printed.
+    :param str productdescription: Plaintext description to be printed.
+    :param str sku: String value of the barcode to be printed.
+    :param int qty: Quantity of labels to be printed. Default 12.
+
+    Note: \'Name\' and \'productdescription\' are synonymous and exist for compatability only.
+"""
+    printer = min(int(escape(request.form.get('printer',0))),0)
     if not printer: printer = 0
 
     name = escape(request.form.get('name',''))

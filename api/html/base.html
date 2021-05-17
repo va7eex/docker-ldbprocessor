@@ -6,12 +6,20 @@
     <meta name="description" content="A layout example with a side menu that hides on mobile, just like the Pure website.">
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu_styles.css')}}">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
-
+<style scoped="">
+        @media screen and (max-width: 600px) {
+            .desktop-only {
+                visibility: hidden;
+                display: none;
+            }
+        }
+    </style>
 <div id="layout">
+    
     <!-- Menu toggle -->
     <a href="#menu" id="menuLink" class="menu-link">
         <!-- Hamburger icon -->
@@ -26,11 +34,22 @@
                 <li class="pure-menu-item"><a href="/bc" class="pure-menu-link">Scanner</a></li>
                 <li class="pure-menu-item"><a href="/lp" class="pure-menu-link">Printer</a></li>
 
-                <li class="pure-menu-item menu-item-divided pure-menu-selected">
-                    <a href="#" class="pure-menu-link">Services</a>
+                <li class="pure-menu-item menu-item-divided">
+                    <a href="/misc/itemmod" class="pure-menu-link">Modify Item</a>
+                    <a href="#" class="pure-menu-link">Price Check</a>
+                    <a href="/bc/register" class="pure-menu-link">Register</a>
                 </li>
 
-                <li class="pure-menu-item"><a href="#contact" class="pure-menu-link">Contact</a></li>
+                <li class="pure-menu-item menu-item-divided">
+                    <a href="#" class="pure-menu-link">Upload AR Invoice</a>
+                    <a href="#" class="pure-menu-link">View AR Invoice</a>
+                    <a href="#" class="pure-menu-link">Upload OS Report</a>
+                    <a href="/osr/vieworder" class="pure-menu-link">View OS Report</a>
+                </li>
+
+                <li class="pure-menu-item menu-item-divided">
+                    <a href="#contact" class="pure-menu-link">Contact</a>
+                </li>
             </ul>
         </div>
     </div>

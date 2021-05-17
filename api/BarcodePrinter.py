@@ -4,7 +4,7 @@ from simple_zpl2 import ZPLDocument, Code128_Barcode, NetworkPrinter
 
 class LabelMaker:
 
-    INCH=2.54
+    INCH=25.4
     
     #what these translate to in linear cm
     DPI203 = 203
@@ -26,26 +26,35 @@ class LabelMaker:
         self.description = description
         self.location = location
 
+        if self.metric:
+            raise TypeError('Use imperial for this')
+
     def getinfo(self):
-        return {'description': self.description, 'size': f'{self.width}x{self.height}', 'width': self.width, 'height': self.height, 'columns': self.columns}
+        return {'description': self.description, 'location': self.location, 'size': f'{self.width}x{self.height}', 'width': self.width, 'height': self.height, 'columns': self.columns}
 
     def printlabel(self, text: str, barcode: str = '', quantity: int = 12):
         zpl = ZPLDocument()
         
         x_start = self.margins*self.dpi
-        x_start_bc = self.margins*(self.dpi*0)-5
+        x_start_bc = self.margins*self.dpi
         y_start = self.margins*2*self.dpi
         x_offset = self.dpi * (1/16)
         y_offset = self.dpi * (1/16)
 
         zpl.add_default_font('0', character_height=self.fontsize)
 
+        #small labels can't fit normal default-width barcodes (module_width=2) in simple_zpl2
+        if(self.width <= 1):
+            zpl.add_barcode_default(module_width=1)
+
         for c in range(self.columns):
+
             x_start += (self.width+self.margins)*self.dpi*c
             x_start_bc += (self.width+self.margins)*self.dpi*c
             zpl.add_field_origin(int(x_start+(c*x_offset)), int(y_start))
             zpl.add_field_data(text[:14])
             zpl.add_field_origin(int(x_start_bc + x_offset+(c*x_offset)), int(y_start + y_offset*2.5))
+
             bc = Code128_Barcode(f'{barcode}', 'N', 25, 'Y')
             zpl.add_barcode(bc)
 

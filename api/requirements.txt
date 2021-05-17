@@ -10,3 +10,4 @@ PyMySQL
 Pillow
 rq
 redis
+flask-selfdoc

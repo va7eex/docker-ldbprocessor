@@ -2,8 +2,25 @@
 {% block content %}
     <script>
             $(document).ready(function(){
+                var dateControl = document.querySelector('input[type="date"]');
+                dateControl.value = new Date().toISOString().slice(0, 10);
                 $('#labelmaker-print').submit(function(){
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
+                    },'json');
+                    return false;
+                });
+                $('#labelmaker-print-order').submit(function(){
+                    console.log($(this).serialize());
+                    $.get($(this).attr('action'), $(this).serialize(), function(response){
+                        // console.log(response);
+                        // console.log(response.length == undefined);
+                        if( response.length != undefined ){
+                            $.post('/labelmaker/print', response, function(response2){
+                                console.log(response2);
+                            } )
+                        } else {
+                            alert('Nothing to print');
+                        }
                     },'json');
                     return false;
                 });
@@ -12,21 +29,25 @@
     <form id='labelmaker-print' class="pure-form pure-form-aligned" action="/labelmaker/print" method="post">
       <fieldset>
           <legend>Printer</legend>
+            <span class="pure-form-message-inline desktop-only">Print replacement barcodes for a given item if the included barcodes fail to scan into the POS.</span>
           <div class="pure-control-group">
               <label for="lp-sku">SKU *</label>
               <input type="text" id="lp-sku" name='sku' required="" />
+              <span class="pure-form-message-inline desktop-only">This will be rendered as the barcode.</span>
           </div>
           <div class="pure-control-group">
               <label for="lp-description">Description</label>
               <input type="text" id="lp-description" name='productdescription' />
+              <span class="pure-form-message-inline desktop-only">This will be rendered as plain text.</span>
           </div>
           <div class="pure-control-group">
             <label for="lp-qty">Quantity</label>
             <input type="number" id="lp-qty" value='12' name='qty'/>
+            <span class="pure-form-message-inline desktop-only">Number of labels to print.</span>
         </div>
           <div class="pure-control-group">
-              <label for="multi-state">Printer</label>
-              <select id="multi-state" class="pure-input-1-2" name='printer'>
+              <label for="lp-state">Printer</label>
+              <select id="lp-state" class="pure-input-1-2" name='printer'>
                 {% for printer in printers %}
                 <option value="{{ printer.index }}">{{ printer.description }}, {{ printer.location }}</option>
                 {% endfor %}
@@ -35,6 +56,28 @@
           <div class='pure-controls'>
             <button type="submit" class="pure-button pure-button-primary">Submit</button>
           </div>
-      </fieldset>
-  </form>
+    </fieldset>
+    </form>
+    <form id='labelmaker-print-order' class="pure-form pure-form-aligned" action="/ar/findbadbarcodes" method="get">
+    <fieldset>
+        <legend>Order Date Printer'</legend>
+        <span class="pure-form-message-inline desktop-only">Bulk print items previously flagged as missing barcodes based on invoice date.</span>
+        <div class="pure-control-group">
+            <label for="lp-order-date">Invoice Date</label>
+            <input type="date" id="lp-order-date" required pattern="\d{4}-\d{2}-\d{2}" name='invoicedate'/>
+            <span class="pure-form-message-inline desktop-only">Invoice date correlating to an LDB Store 100 delivery</span>
+        </div>
+        <div class="pure-control-group">
+            <label for="lp-order-state">Printer</label>
+            <select id="lp-order-state" class="pure-input-1-2" name='printer'>
+                {% for printer in printers %}
+                <option value="{{ printer.index }}">{{ printer.description }}, {{ printer.location }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class='pure-controls'>
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+        </div>
+    </fieldset>
+    </form>
 {% endblock %}

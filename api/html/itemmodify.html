@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+        <div>
+        <form id='itemmodify' class="pure-form pure-form-aligned" action="/misc/itemmod" method="get">
+            <fieldset>
+                <legend id="itemmodify-legend">Modify Item</legend>
+                <div class="pure-control-group">
+                    <label for="itemmodify-sku">SKU</label>
+                    <input type="text" id="itemmodify-sku" name="sku" placeholder="SKU/Barcode" required="" value="{{ sku }}" autofocus/>
+                    <span class="pure-form-message-inline desktop-only">Lookup based on SKU</span>
+                </div>
+                <div class="pure-control-group">
+                    <label for="itemmodify-description">Description</label>
+                    <input type="text" id="itemmodify-description" readonly value="{{ productdescription }}"/>
+                    <span class="pure-form-message-inline desktop-only">Product Description</span>
+                </div>
+                <div class="pure-control-group">
+                    <label for="itemmodify-badbarcode" class="pure-checkbox">Damaged/missing barcode</label>
+                    <input type="checkbox" id="itemmodify-badbarcode" name='badbarcode' value='1' {% if badbarcode %} checked='' {% endif %}/>
+                    <span class="pure-form-message-inline desktop-only">This will automatically flag an incoming SKU for label printing.</span>
+                </div>
+                <div class='pure-controls'>
+                    <button id='itemmodify-retrieve' type="submit" class="pure-button pure-button-primary" formmethod='get'>Retrieve</button>
+                    <button id='itemmodify-submit' type="submit" class="pure-button pure-button-primary" formmethod='post' formaction='/misc/badbarcode'>Submit</button>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+{% endblock %}

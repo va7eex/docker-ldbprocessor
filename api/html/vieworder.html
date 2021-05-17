@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+    <form id='osr-view-order' class="pure-form pure-form-aligned" action="/osr/getorder" method="get">
+    <fieldset>
+        <legend>View Order Submission Report by Date.</legend>
+        <span class="pure-form-message-inline desktop-only">placeholder</span>
+        <div class="pure-control-group">
+            <label for="osr-view-order-order-state">Known Orders</label>
+            <select id="osr-view-order-order-state" class="pure-input-1-2" name='orderdate'>
+                <option value=""></option>
+                {% for date in dates %}
+                <option value="{{ date.orderdate }}" {% if date.orderdate == selecteddate %}selected{% endif %}>{{ date.orderdate }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="pure-control-group">
+            <label for="osr-view-order-sku">Order Number</label>
+            <input type="text" id="itemmodify-sku" name="ordernumber" placeholder="1234567" />
+            <span class="pure-form-osr-view-order-inline desktop-only">placeholder</span>
+        </div>
+        <div class="pure-control-group">
+            <label for="osr-view-order-thirdparty" class="pure-checkbox">Third Party</label>
+            <input type="checkbox" id="osr-view-order-thirdparty" name='thirdparty' value='1'/>
+            <span class="pure-form-message-inline desktop-only">placeholder</span>
+        </div>
+        <div class='pure-controls'>
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
+        </div>
+    </fieldset>
+    </form>
+{% endblock %}
