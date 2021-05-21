@@ -172,13 +172,14 @@ def __countBarcodes(scandate):
     barcodes = {}
     tally = {}
     total = 0
-    for key in redis_client.scan_iter(f'{scandate}ingest*'):
-        key = str(key)
+    for key in redis_client.scan_iter(f'{scandate}_ingest*'):
+        key = key.decode()
         print(key)
         if not f'{scandate}_scanstats' in key:
 #            barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
             tally[key] = __sumRedisValues(redis_client.hvals(key))
             total += tally[key]
+            print(total, tally[key])
     return barcodes, tally, total
 
 @app.route('/bc/scan', methods=['POST'])
@@ -193,7 +194,7 @@ def page_bcscan():
     addremove = escape(request.form.get('addremove', 'add'))
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
 
-    redishashkey = f'{datestamp}ingest_{escape(session["scanner_terminal"])}_{scangroup}'
+    redishashkey = f'{datestamp}_ingest_{escape(session["scanner_terminal"])}_{scangroup}'
 
     if 'remove' in addremove:
         if not redis_client.hexists(redishashkey,upc):
