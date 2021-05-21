@@ -8,6 +8,14 @@ import json
 from mailattachmentsarchiver import mailattachmentsarchiver as maa_app
 
 def generateIMAP(file,addr,port,user,pwd):
+    """Generates IMAP credentials from sensitive environmental values.
+
+    :param file: File to output.
+    :param addr: Email server address, ex imap.gmail.com
+    :param port: Email server port.
+    :param user: Username used to authenticate.
+    :param pwd: Password used to authenticate.
+    """
     credentials = {}
     credentials['server']=addr
     credentials['user']=user
@@ -20,9 +28,16 @@ def generateIMAP(file,addr,port,user,pwd):
 
 #this is for scheduling
 def getmail(maa):
+    """Gets the mail."""
     maa.get_mail()
 
-def main(maa, hours):
+def main(maa, hours: int = 1):
+    """
+    Retreives the mail every X hours.
+    
+    :param maa: Mailattachmentarchiver used for getting email attachments.
+    :param hours: Interval between checking email in hours, default 1.
+    """
     #if we don't define it, its an hour interval
     if hours is None or hours == '' or not hours.isdigit(): hours = 1
 
@@ -41,4 +56,4 @@ if __name__ == '__main__':
     generateIMAP('/tmp/imap.json',os.getenv('IMAP_ADDR'),os.getenv('IMAP_PORT'),os.getenv('IMAP_USER'),os.getenv('IMAP_PASS'))
 
     maa = maa_app('/tmp/imap.json','/usr/share/config.json')
-    main(maa, os.getenv('SYNCTIME'))
+    main(maa, int(os.getenv('SYNCTIME')))

@@ -25,6 +25,12 @@ from datetime import date
 from LineItem import LineItemAR as LineItem
 
 class arinvoice:
+    """
+    For processing BCLDB Store 100 ARinvoice files sent out to accompany the weekly order.
+
+    Files are sent with the name format r'XXARNEWINVOICE_[0-9]{5,}_1.xls'.
+    BCLDB uses Oracle BI Publisher to send files.
+    """
 
     DIRECTORY='/var/ldbinvoice'
     PB_FILE='processedbarcodes.json'
@@ -32,6 +38,13 @@ class arinvoice:
     DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
 
     def __init__(self, apiurl, apikey='', pricechangeignore=0.0):
+        """
+        Initialize class.
+
+        :param apiurl: Base URL for API endpoint, such as 'localhost:5000', or 'prod.example.com:12345'.
+        :param apikey: API key if present.
+        :param pricechangeignore: When generating a price difference report, ignore changes less than this value.
+        """
 
         self.http = urllib3.PoolManager()
         self.apikey = apikey
@@ -39,6 +52,13 @@ class arinvoice:
         self.pricechangeignore = float(pricechangeignore)
 
     def __apiquery(self, method='GET', url='', **kwargs):
+        """
+        Send an API query.
+
+        :param method: The HTTP method to use, ex GET/SET/PUT.
+        :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
+        :param kwargs: All data to be sent, as a json dict.
+        """
         print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
@@ -54,6 +74,14 @@ class arinvoice:
 
     # write price report to file, later will make this a redis DB
     def __addtopricechangereport(self, invoicedate, **kwargs):
+        """
+        Compares incoming price per sku and outputs a price change to file.
+
+        This will prepend various alerts for quick recognition of large changes.
+
+        :param invoicedate: Date of invoice, to be placed in filename.
+        :param kwargs: Dict of values to compare against.
+        """
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
             if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
                 #ignore price changes below a threshold
@@ -75,6 +103,11 @@ class arinvoice:
                 fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
 
     def __itmdb_checkchange(self, invoicedate):
+        """
+        Queries API to find price changes and starts the report process.
+        
+        :param invoicedate: The date to check against.
+        """
         rows, status = self.__apiquery('GET', '/ar/pricechange', **{'invoicedate': invoicedate})
 
         print(len(rows))
@@ -85,6 +118,11 @@ class arinvoice:
             
 
     def __dopricechangelist(self, invoicedate):
+        """
+        Updates API with order's prices.
+
+        :param invoicedate: Date of invoice.
+        """
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
@@ -93,6 +131,12 @@ class arinvoice:
         self.__itmdb_checkchange(invoicedate)
 
     def __addlineitem(self, line, invoicedate):
+        """
+        Converts a static line from the incoming arinvoice.xls file to a structured dict and uploads to the API.
+
+        :param line: A line read from the incoming csv file.
+        :param invoicedate: Date of invoice.
+        """
 
         li = LineItem(*line.split(','))
         
@@ -100,6 +144,14 @@ class arinvoice:
 
 
     def __printinvoicetofile(self, invoicedate):
+        """
+        Exports invoice stored in API to a format Profitek POS can understand.
+
+        File is a headerless CSV file with the format '$sku,$suquantity,$suprice,$unneccessarydetails'
+        Please note, all values after and including $unneccessarydetails are ignored, they're just there for humans.
+
+        :param invoicedate: Date of invoice.
+        """
         print(f'Printing invoice {invoicedate} to file')
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
@@ -114,6 +166,13 @@ class arinvoice:
             print('Error: PO File exists')
 
     def __checkforbadbarcodes(self, invoicedate):
+        """
+        Checks for bad barcodes in API and if they exist on this order print replacement barcode stickers.
+
+        Label templates are preformatted and mathematically generated via the BarcodePrinter class in API.
+
+        :param invoicedate: Date of invoice.
+        """
         rows, status = self.__apiquery('GET', '/ar/findbadbarcodes', **{'invoicedate': invoicedate})
         print(len(rows))
 
@@ -123,6 +182,14 @@ class arinvoice:
             self.__apiquery('POST', '/labelmaker/print', **row)
 
     def processCSV(self, inputfile):
+        """
+        Reads the ARinvoice .xls file line by line and sends to API.
+
+        This function will sanitize strings for undesirable characters as well as cleanup dollar amounts >999.99.
+        This will also extract the invoice date from the file.
+
+        :param inputfile: File to read from. Can be full or relative path.
+        """
         #this is what an empty line looks like
         emptyline = ',,,,,,,,,,,,,'
         with open(inputfile) as f:

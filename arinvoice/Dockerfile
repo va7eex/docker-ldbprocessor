@@ -25,6 +25,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
      && date
 
 ADD ./monitor_file-for-ar.sh /usr/share/monitor_filesystem.sh
+ADD ../api/LineItem.py /usr/share/
 ADD ./*.py /usr/share/
 
 VOLUME ["/var/ldbinvoice"]

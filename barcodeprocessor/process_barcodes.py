@@ -143,7 +143,7 @@ class BarcodeProcessor:
         with open(file) as f:
             #for line in reversed(f): #processing lines from bottom to top.
             for line in f: #just in case we need this later
-                line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
+                line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
                 line = line.replace('\n','').split(',')
                 datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
 

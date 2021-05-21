@@ -25,6 +25,10 @@ from datetime import date
 from LineItem import LineItemOS as LineItem
 
 class OrderSubmissionReport:
+    """For processing BCLDB Store 100 Order Submission Reports .xls reports.
+
+
+    """
 
     DIRECTORY='/var/ldbinvoice'
     PB_FILE='processedbarcodes.json'
@@ -44,6 +48,8 @@ class OrderSubmissionReport:
     ITEMLINEOK = re.compile(r'\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
     def __init__(self, apiurl, apikey=''):
+        """
+        """
         print('LDB OSR Processor started.')
 
         self.http = urllib3.PoolManager()
@@ -51,6 +57,13 @@ class OrderSubmissionReport:
         self.apikey = apikey
 
     def __apiquery(self, method='GET', url='', **kwargs):
+       """
+        Send an API query.
+
+        :param method: The HTTP method to use, ex GET/SET/PUT.
+        :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
+        :param kwargs: All data to be sent, as a json dict.
+        """
         print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
@@ -64,12 +77,18 @@ class OrderSubmissionReport:
         return rows, r.status
 
     def __converttimedatetonum(self, time):
+        """Standardizes timestamp."""
 
         # %d%b%y = 02DEC20
 
         return datetime.datetime.strptime(time.lower(), '%d%b%y').strftime('%Y-%m-%d')
 
     def __getorderfromdatabase(self, ordernumber):
+        """
+        Gets a specific order from API.
+
+        :param ordernumber: The order number to retrieve.
+        """
 
         if ordernumber == 'NaN':
             return
@@ -80,6 +99,15 @@ class OrderSubmissionReport:
         return rows
 
     def __insertintodatabase(self, line, table, ordernumber, orderdate, thirdparty):
+        """
+        Uploads each line to API.
+
+        :param line: Line item, will be converted to a structured dict.
+        :param table: Reserved.
+        :param ordernumber: The order this item was submitted from.
+        :param orderdate: The date this item was ordered.
+        :param thirdparty: Whether this is coming from a third party warehouse.
+        """
         if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
             return
 
@@ -96,6 +124,16 @@ class OrderSubmissionReport:
         print(status)
 
     def __processCSV(self, inputfile):
+        """
+        Processes CSV file line by line.
+
+        This function will sanitize strings for unwanted characters and clean up dollar amounts >$999.99
+        
+        This function will extract various key values, such as Order Number, Order Date, and Expected Ship Date.
+        Line items will also be tagged whether they are shipping via third party warehouse or direct.
+
+        :param inputfile: File to process.
+        """
         ordernum = 0
         orderdate = 0
         ordershipdate = 0
@@ -167,6 +205,11 @@ class OrderSubmissionReport:
         return ordernum, orderdate, ordershipdate
 
     def processCSV(self, inputfile):
+        """
+        Process incoming CSV file for API.
+
+        :param inputfile: File to be processed.
+        """
         order = {}
         order['ordernum'], order['orderdate'], order['ordershipdate'] = self.__processCSV(inputfile)
         with open(f"{self.DIRECTORY}/order-{order['ordernum']}.txt", 'w') as fp:
