@@ -161,7 +161,7 @@ def page_bc_register():
 
     if request.method == 'POST':
         #register with random string if nothing else.
-        session['scanner_terminal'] = request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8)))
+        session['scanner_terminal'] = request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8))).lower()
         return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
 
 def __sumRedisValues( list ):
@@ -172,7 +172,7 @@ def __countBarcodes(scandate):
     barcodes = {}
     tally = {}
     total = 0
-    for key in redis_client.scan_iter(str(scandate) + 'ingest*'):
+    for key in redis_client.scan_iter(f'{scandate}ingest*'):
         print(key)
         if not f'{scandate}_scanstats' in str(key):
 #            barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
