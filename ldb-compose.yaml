@@ -83,7 +83,7 @@ services:
       - APIURL=ldb_api:5000
       - APIKEY=${APIKEY}
     volumes:
-      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_api
@@ -103,7 +103,7 @@ services:
       - APIKEY=${APIKEY}
       - PRICECHANGEIGNORE=${PRICECHANGEIGNORE}
     volumes:
-      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_api
@@ -125,7 +125,7 @@ services:
       - IMAP_PORT=${IMAP_PORT}
       - SYNCTIME=1
     volumes:
-      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_processor_ar
