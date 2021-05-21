@@ -31,7 +31,7 @@ def getmail(maa):
     """Gets the mail."""
     maa.get_mail()
 
-def main(maa, hours: int = 1):
+def main(maa, hours):
     """
     Retreives the mail every X hours.
     
@@ -56,4 +56,4 @@ if __name__ == '__main__':
     generateIMAP('/tmp/imap.json',os.getenv('IMAP_ADDR'),os.getenv('IMAP_PORT'),os.getenv('IMAP_USER'),os.getenv('IMAP_PASS'))
 
     maa = maa_app('/tmp/imap.json','/usr/share/config.json')
-    main(maa, int(os.getenv('SYNCTIME')))
+    main(maa, os.getenv('SYNCTIME'))
