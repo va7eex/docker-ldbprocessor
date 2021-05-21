@@ -5,7 +5,7 @@ services:
   ## MariaDB
   ldb_database:
     image: linuxserver/mariadb:latest
-    container_name: ldb_database_api
+    container_name: ldb_database
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -18,11 +18,11 @@ services:
     networks:
       - ldbbackend
     volumes:
-      - /mnt/ldbdatabase_api:/config
+      - /mnt/ldbdatabase:/config
   ## Redis
   ldb_redis:
     image: redis:alpine
-    container_name: ldb_redis_api
+    container_name: ldb_redis
     restart: always
     networks:
       - ldbbackend
@@ -37,10 +37,13 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - MYSQL_IP=ldb_database_api
+      - MYSQL_IP=ldb_database
       - MYSQL_DB=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - REDIS_IP=ldb_redis
+      - REDIS_PORT=6379
+      - LABEL_MAKER=${LABEL_MAKER}
     restart: always
     ports:
       - 5500:5000
