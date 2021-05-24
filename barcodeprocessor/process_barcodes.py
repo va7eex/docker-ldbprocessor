@@ -160,6 +160,7 @@ class BarcodeProcessor:
         line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
         line = line.replace('\n','').split(',')
         datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
+        print(datescanned + ','.join(line[1:]))
         return datescanned + ','.join(line[1:])
 
     def __findlastdate(self, file):
