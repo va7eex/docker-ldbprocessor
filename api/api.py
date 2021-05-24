@@ -174,7 +174,7 @@ def __countBarcodes(scandate):
     barcodes = {}
     tally = {}
     total = 0
-    for key in redis_client.scan_iter(f'{scandate}_ingest*'):
+    for key in redis_client.scan_iter(match=f'{scandate}_ingest_*'):
         key = key.decode()
         print(key)
         if not f'{scandate}_scanstats' in key:

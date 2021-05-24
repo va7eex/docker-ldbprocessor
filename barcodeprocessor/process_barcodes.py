@@ -175,7 +175,6 @@ class BarcodeProcessor:
         #if this list already exists, delete it.
         payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestdate})
 
-        latestscan=0            #
         self.scangroup=0             #
         previousline=None       #
         previousgroup=self.scangroup #
@@ -193,7 +192,7 @@ class BarcodeProcessor:
 
                 #if theres some hideous scan error, you can start from the beginning or go back one
                 if( 'DELALL' in line[3] ):
-                    payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestscan})
+                    payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestdate})
                     forReview=[]
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
                 elif( 'DELLAST' in line[3] ):
@@ -218,8 +217,8 @@ class BarcodeProcessor:
                     self.__apiquery('POST', '/bc/scan', **self.__urlpayload(line[3], datescanned))
                     #generate stats, I love stats.
                     # if not 'DOESNOTSCAN' in line[3]:
-                    #     self.__r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
-                    #     self.__r.hincrby(f'{latestscan}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
+                    #     self.__r.hincrby(f'{latestdate}_scanstats', 'length: %s'%len(line[3]),1)
+                    #     self.__r.hincrby(f'{latestdate}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
                     #if the data on the line is larger than 20 flag it for review.
                     if( len(line[3]) > 20 ):
                         forReview.append(line[3])
@@ -229,12 +228,12 @@ class BarcodeProcessor:
 
 
         self.scannedlist = {}
-        self.scannedlist[latestscan] = {}
-        # self.scannedlist[latestscan]['receiving_type']=inventorytype
-        self.scannedlist[latestscan]['barcodes_by_pallet'], self.scannedlist[latestscan]['_total_by_pallet'], self.scannedlist[latestscan]['_total'] = self.__countBarcodes(latestscan)
-        # self.scannedlist[latestscan]['stats4nerds'] = self.__r.hgetall(f'{latestscan}_scanstats')
+        self.scannedlist[latestdate] = {}
+        # self.scannedlist[latestdate]['receiving_type']=inventorytype
+        self.scannedlist[latestdate]['barcodes_by_pallet'], self.scannedlist[latestdate]['_total_by_pallet'], self.scannedlist[latestdate]['_total'] = self.__countBarcodes(latestdate)
+        # self.scannedlist[latestdate]['stats4nerds'] = self.__r.hgetall(f'{latestdate}_scanstats')
         if( len(forReview) > 0 ):
-            self.scannedlist[latestscan]['_possible_scan_errors'] = forReview
+            self.scannedlist[latestdate]['_possible_scan_errors'] = forReview
 
         with open(outfile, 'w') as fp:
             json.dump(self.scannedlist,fp,indent=2,separators=(',', ' x '),sort_keys=True)
