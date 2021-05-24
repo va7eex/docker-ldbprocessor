@@ -13,10 +13,10 @@ RUN apt update && \
     apt install -y python3 \
 	python3-simplejson \
 	python3-dateutil \
-	python3-redis \
-        python3-mysql.connector \
 	inotify-tools \
 	csvkit
+
+RUN pip3 install urllib3
 
 ADD ./monitor_file-for-bc.sh /usr/share/monitor_filesystem.sh
 ADD ./*.py /usr/share/
