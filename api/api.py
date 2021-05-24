@@ -258,7 +258,7 @@ def __bc_deleteRedisDB( scandate):
         pipe.execute()
         return count
 
-@app.route('/bc/deleteall', methods='POST')
+@app.route('/bc/deleteall', methods=['POST'])
 @auto.doc()
 def bc_deleteall():
     if not 'scanner_terminal' in session:
