@@ -190,7 +190,7 @@ def bc_countbarcodes():
     if not 'scanner_terminal' in session:
         return {'success': False, 'reason': 'not registered'}, 401
 
-    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+    datestamp = escape(request.args.get('datestamp',datetime.today().strftime('%Y%m%d')))
 
     payload = {}
     payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
