@@ -54,7 +54,7 @@ class OrderSubmissionReport:
 
         self.apiurl = apiurl
         self.apikey = apikey
-        self.cookies = None
+        self.__s = requests.Session() 
 
     def __apiquery(self, method='GET', url='', **kwargs):
         """
@@ -67,21 +67,19 @@ class OrderSubmissionReport:
         print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
-                r = requests.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={'apikey': self.apikey, **kwargs})
+                r = self.__s.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={'apikey': self.apikey, **kwargs})
             else:
-                r = requests.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={'apikey': self.apikey, **kwargs})
+                r = self.__s.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={'apikey': self.apikey, **kwargs})
         else:
             if method == 'POST':
-                r = requests.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={**kwargs})
+                r = self.__s.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={**kwargs})
             else:
-                r = requests.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={**kwargs})
+                r = self.__s.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={**kwargs})
         if r.status_code >= 500:
             raise Exception(f'Error on server: {r.status}')
         elif r.status_code >= 400:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
-        
-        self.cookies = requests.cookies.RequestsCookiesJar()
 
         return r.json(), r.status_code
 
