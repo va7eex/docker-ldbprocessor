@@ -13,8 +13,8 @@ RUN apt update && \
     apt install -y python3 \
 	python3-simplejson \
 	python3-dateutil \
-	inotify-tools \
-	csvkit
+	python3-pip \
+	inotify-tools
 
 RUN pip3 install urllib3
 
