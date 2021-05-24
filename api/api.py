@@ -188,7 +188,7 @@ def __countBarcodes(scandate):
 @auto.doc()
 def bc_countbarcodes():
     if not 'scanner_terminal' in session:
-        return {'success': False, 'reason': 'not registered'}, 204
+        return {'success': False, 'reason': 'not registered'}, 401
 
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
 

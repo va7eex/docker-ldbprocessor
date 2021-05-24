@@ -110,10 +110,10 @@ class BarcodeProcessor:
         time.sleep(0.1)
         return r.json(), r.status_code
     
-    def __countbarcodes(self, datestamp):
-        payload, status = self.__apiquery('GET','/bc/lastscanned')
+    def __countBarcodes(self, datestamp):
+        payload, status = self.__apiquery('GET','/bc/bc_countbarcodes')
 
-        if not payload['success']: raise exception('not authorized')
+        if status == 401: raise exception('not authorized')
 
         barcodes = {}
         for scangroup in payload['barcodes'].keys():
