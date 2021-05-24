@@ -19,7 +19,7 @@ RUN apt update && \
     inotify-tools \
     csvkit
 
-RUN pip3 install urllib3
+RUN pip3 install requests
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
      && date

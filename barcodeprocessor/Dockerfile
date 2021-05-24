@@ -16,7 +16,7 @@ RUN apt update && \
 	python3-pip \
 	inotify-tools
 
-RUN pip3 install urllib3
+RUN pip3 install requests
 
 ADD ./monitor_file-for-bc.sh /usr/share/monitor_filesystem.sh
 ADD ./*.py /usr/share/

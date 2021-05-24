@@ -19,7 +19,7 @@ import json
 import time
 import datetime
 import re
-import urllib3
+import requests
 from datetime import date
 
 from LineItem import LineItemAR as LineItem
@@ -61,17 +61,24 @@ class arinvoice:
         """
         print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
-            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+            if method == 'POST':
+                r = requests.post(f'{method}', f'http://{self.apiurl}{url}', cookies=self.cookies, data={'apikey': self.apikey, **kwargs})
+            else:
+                r = requests.get(f'{method}', f'http://{self.apiurl}{url}', cookies=self.cookies, params={'apikey': self.apikey, **kwargs})
         else:
-            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
+            if method == 'POST':
+                r = requests.post(f'{method}', f'http://{self.apiurl}{url}', cookies=self.cookies, data={**kwargs})
+            else:
+                r = requests.get(f'{method}', f'http://{self.apiurl}{url}', cookies=self.cookies, params={**kwargs})
         if r.status >= 500:
             raise Exception(f'Error on server: {r.status}')
         elif r.status >= 400:
             if r.status == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
-        rows = json.loads(r.data.decode('utf-8'))
-        return rows, r.status
+        self.cookies = requests.cookies.RequestsCookiesJar()
+
+        return r.json(), r.status_code
 
     # write price report to file, later will make this a redis DB
     def __addtopricechangereport(self, invoicedate, **kwargs):
