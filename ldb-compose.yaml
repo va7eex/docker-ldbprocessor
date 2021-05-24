@@ -56,24 +56,24 @@ services:
 
   #apps, will build to order
   ## Barcode processor
-  # ldb_processor_bc:
-  #   container_name: ldb_processor_bc
-  #   build:
-  #     context: barcodeprocessor/
-  #     dockerfile: Dockerfile
-  #     args:
-  #       - TZ=${TZ}
-  #   user: "1002:1002"
-  #   environment:
-  #     - APIURL="ldb_api:5000"
-  #     - APIKEY=${APIKEY}
-  #   volumes:
-  #     - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
-  #   restart: always
-  #   depends_on:
-  #     - ldb_api
-  #   networks:
-  #     - ldbbackend
+  ldb_processor_bc:
+    container_name: ldb_processor_bc
+    build:
+      context: barcodeprocessor/
+      dockerfile: Dockerfile
+      args:
+        - TZ=${TZ}
+    user: "1002:1002"
+    environment:
+      - APIURL="ldb_api:5000"
+      - APIKEY=${APIKEY}
+    volumes:
+      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
+    restart: always
+    depends_on:
+      - ldb_api
+    networks:
+      - ldbbackend
   # ## Order Submission Processor
   ldb_processor_os:
     container_name: ldb_processor_os_api
