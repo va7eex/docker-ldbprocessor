@@ -67,14 +67,14 @@ class OrderSubmissionReport:
         print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
-                r = self.__s.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={'apikey': self.apikey, **kwargs})
+                r = self.__s.post(f'http://{self.apiurl}{url}', data={'apikey': self.apikey, **kwargs})
             else:
-                r = self.__s.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={'apikey': self.apikey, **kwargs})
+                r = self.__s.get(f'http://{self.apiurl}{url}', params={'apikey': self.apikey, **kwargs})
         else:
             if method == 'POST':
-                r = self.__s.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={**kwargs})
+                r = self.__s.post(f'http://{self.apiurl}{url}', data={**kwargs})
             else:
-                r = self.__s.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={**kwargs})
+                r = self.__s.get(f'http://{self.apiurl}{url}', params={**kwargs})
         if r.status_code >= 500:
             raise Exception(f'Error on server: {r.status}')
         elif r.status_code >= 400:
