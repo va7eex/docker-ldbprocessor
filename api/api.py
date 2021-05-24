@@ -177,11 +177,10 @@ def __countBarcodes(scandate):
     for key in redis_client.scan_iter(match=f'{scandate}_ingest_*'):
         key = key.decode()
         print(key)
-        if not f'{scandate}_scanstats' in key:
-            barcodes[key] = redis_client.hgetall(key)
-            tally[key] = __sumRedisValues(redis_client.hvals(key))
-            total += tally[key]
-            print(total, tally[key])
+        barcodes[key] = redis_client.hgetall(key)
+        tally[key] = __sumRedisValues(redis_client.hvals(key))
+        total += tally[key]
+        print(total, tally[key])
     return barcodes, tally, total
 
 @app.route('/bc/countbarcodes', methods=['GET'])
