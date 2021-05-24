@@ -172,8 +172,8 @@ class BarcodeProcessor:
 
                 if( int(datescanned) > latestscan ):
                     if( latestscan > 0 ):
-                        self.__deleteRedisDB(latestscan)
-                    self.__deleteRedisDB(datescanned)
+                        payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestscan})
+                    payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': datescanned})
                     latestscan = int(datescanned)
                     self.scangroup = 0
                     forReview=[]
@@ -182,7 +182,7 @@ class BarcodeProcessor:
 
                 #if theres some hideous scan error, you can start from the beginning or go back one
                 if( 'DELALL' in line[3] ):
-                    self.__deleteRedisDB(latestscan)
+                    payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestscan})
                     forReview=[]
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
                 elif( 'DELLAST' in line[3] ):

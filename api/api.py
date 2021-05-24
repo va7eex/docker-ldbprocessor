@@ -264,7 +264,7 @@ def __bc_deleteRedisDB( scandate):
 @auto.doc()
 def bc_deleteall():
     if not 'scanner_terminal' in session:
-        return {'success': False, 'reason': 'nothing to do'}
+        return {'success': False, 'reason': 'nothing to do'}, 204
     
     count = __bc_deleteRedisDB(escape(request.form.get('scandate','')))
 
