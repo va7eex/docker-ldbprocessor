@@ -102,10 +102,10 @@ class BarcodeProcessor:
             else:
                 r = self.__s.get(f'http://{self.apiurl}{url}', params={**kwargs})
         if r.status_code >= 500:
-            raise Exception(f'Error on server: {r.status}')
+            raise Exception(f'Error on server: {r.status_code}')
         elif r.status_code >= 400:
             if r.status_code == 401: raise Exception('Not authorized')
-            raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
+            raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
 
         return r.json(), r.status_code
     
