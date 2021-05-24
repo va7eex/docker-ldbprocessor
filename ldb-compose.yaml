@@ -65,7 +65,7 @@ services:
         - TZ=${TZ}
     user: "1002:1002"
     environment:
-      - APIURL="ldb_api:5000"
+      - APIURL=ldb_api:5000
       - APIKEY=${APIKEY}
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice

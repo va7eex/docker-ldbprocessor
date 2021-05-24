@@ -29,7 +29,7 @@ app = Flask(__name__)
 auto = Autodoc(app)
 #testing purposes only PLEASE CHANGE IN PROD
 #this is literally the example key
-app.secret_key = bytes(os.getenv("FLASK_SECRET"))
+app.secret_key = bytes(os.getenv("FLASK_SECRET").encode(encoding='UTF-8',errors='namereplace'))
 
 app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_IP')
 app.config['MYSQL_DATABASE_PORT'] = int(os.getenv('MYSQL_PORT'))
@@ -154,7 +154,7 @@ def page_bc_register():
         if escape(request.args.get('check','')):
             return {'success': bool('scanner_terminal' in session) }
         if not 'scanner_terminal' in session:
-            return render_template('bcregister.html')
+            return render_template('bcregister.html'), 204
         else:
             return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
 
