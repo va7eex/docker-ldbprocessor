@@ -149,7 +149,7 @@ class BarcodeProcessor:
 
         barcodes = {}
         for scangroup in payload['barcodes'].keys():
-            barcodes[scangroup] = self.__lookupUPC(payload['barcodes']['scangroup'])
+            barcodes[scangroup] = self.__lookupUPC(payload['barcodes'][scangroup])
 
         return barcodes, payload['tally'], payload['total']
 
