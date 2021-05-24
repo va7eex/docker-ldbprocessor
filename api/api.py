@@ -231,6 +231,7 @@ def page_bcscan():
             redis_client.hdel(redishashkey,upc)
     else:
         redis_client.hincrby(redishashkey, upc,1)
+        print(redishashkey, upc)
         redis_client.expire(redishashkey, (60*60*24)*3) #expire this in 3 days to keep DB size small.
 
     redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
