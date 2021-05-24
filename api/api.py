@@ -175,7 +175,7 @@ def __countBarcodes(scandate):
     tally = {}
     total = 0
     for key in redis_client.scan_iter(match=f'{scandate}_ingest_*'):
-        key = key.decode()
+        key = str(key)
         print(key)
         barcodes[key] = redis_client.hgetall(key)
         tally[key] = __sumRedisValues(redis_client.hvals(key))
