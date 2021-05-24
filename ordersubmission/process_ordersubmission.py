@@ -52,7 +52,6 @@ class OrderSubmissionReport:
         """
         print('LDB OSR Processor started.')
 
-        self.http = urllib3.PoolManager()
         self.apiurl = apiurl
         self.apikey = apikey
 

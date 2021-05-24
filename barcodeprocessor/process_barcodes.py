@@ -74,7 +74,6 @@ class BarcodeProcessor:
         :param pricechangeignore: When generating a price difference report, ignore changes less than this value.
         """
 
-        self.http = urllib3.PoolManager()
         self.apikey = apikey
         self.apiurl = apiurl
         self.cookies = None
