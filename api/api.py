@@ -235,7 +235,7 @@ def page_bcscan():
     redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
 
     payload = {}
-    if escape(request.form.get('machine'),True):
+    if not 'machine' in request.form:
         payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
 
     return {'success': True, **payload}
