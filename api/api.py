@@ -151,7 +151,7 @@ def page_bc_register():
     
     """
     if request.method == 'GET':
-        if escape(request.args.get('check','')):
+        if 'check' in request.args:
             return {'success': bool('scanner_terminal' in session) }
         if not 'scanner_terminal' in session:
             return render_template('bcregister.html'), 204
@@ -162,6 +162,8 @@ def page_bc_register():
     if request.method == 'POST':
         #register with random string if nothing else.
         session['scanner_terminal'] = request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8))).lower()
+        if 'headless' in request.form:
+            return {'success': True}
         return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
 
 def __sumRedisValues( list ):
