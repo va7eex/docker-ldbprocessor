@@ -85,7 +85,7 @@ class arinvoice:
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
             if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
                 #ignore price changes below a threshold
-                if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return
+                if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return 1
 
                 alert=''
                 if( (kwargs['suprice']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
@@ -101,6 +101,8 @@ class arinvoice:
                 fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
                 fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
+            
+            return 0
 
     def __itmdb_checkchange(self, invoicedate):
         """
@@ -112,9 +114,16 @@ class arinvoice:
 
         print(len(rows))
 
+        suppressedchanges = 0
+
         for row in rows.values():
             print(row)
-            self.__addtopricechangereport( invoicedate, **row )
+            suppressedchanges += self.__addtopricechangereport( invoicedate, **row )
+
+        #if one or more price changes were below threshold, report that.
+        if suppressedchanges > 0:
+            with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
+                fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.")
             
 
     def __dopricechangelist(self, invoicedate):
