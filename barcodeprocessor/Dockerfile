@@ -5,13 +5,8 @@ LABEL maintainer="David Rickett"
 ARG TZ=America/Vancouver
 ARG DEBIAN_FRONTEND=noninteractive
 
-ENV MYSQL_IP=127.0.0.1
-ENV MYSQL_PORT=3306
-ENV MYSQL_USER=EXAMPLE
-ENV MYSQL_PASSWORD=EXAMPLE
-ENV MYSQL_DB=EXAMPLE
-ENV REDIS_IP=ldbredis
-ENV REDIS_PORT=6379
+ENV APIURL=127.0.0.1
+ENV APIKEY=''
 
 RUN apt update && \
     apt upgrade -y &&\

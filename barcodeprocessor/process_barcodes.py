@@ -13,14 +13,17 @@ __status__ = "Production"
 #end
 #,,,,,,,,,,,
 
+from logging import exception
 import sys
 import os
 import json
 import codecs
 import datetime
-import redis
 import re
-from mysql.connector import (connection)
+import random
+import string
+
+import urllib3
 
 class BarcodeProcessor:
 
@@ -62,31 +65,55 @@ class BarcodeProcessor:
     key_tally = '_tally'
     key_checksum = 'checksum'
 
-    def __init__(self, redis_ip, redis_port, mysql_ip, mysql_port, mysql_user, mysql_pass, mysql_db): 
+    def __init__(self, apiurl, apikey=''):
+        """
+        Initialize class.
 
+        :param apiurl: Base URL for API endpoint, such as 'localhost:5000', or 'prod.example.com:12345'.
+        :param apikey: API key if present.
+        :param pricechangeignore: When generating a price difference report, ignore changes less than this value.
+        """
+
+        self.http = urllib3.PoolManager()
+        self.apikey = apikey
+        self.apiurl = apiurl
         self.scannedlist = {}
 
-        self.__cnx = connection.MySQLConnection(user=mysql_user, password=mysql_pass,
-                    host=mysql_ip,
-                    port=mysql_port,
-                    database=mysql_db)
-        self.__r = redis.StrictRedis(redis_ip, redis_port, charset='utf-8',decode_responses=True)
+        if not self.__apiquery(method='GET', url='/bc/register', **{'check': True})['success']:
+            self.__apiquery(method='POST', url='/bc/register', **{'scanner_terminal': 'processor_'.join(random.choices(string.ascii_uppercase + string.digits, k=4))})
 
-    def __sumRedisValues( self, list ):
-        return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
+    def __apiquery(self, method='GET', url='', **kwargs):
+        """
+        Send an API query.
 
-    #https://stackoverflow.com/questions/21975228/redis-python-how-to-delete-all-keys-according-to-a-specific-pattern-in-python
-    def __deleteRedisDB(self, scandate ):
-        print( f'Deleting databases for {scandate}:' )
-        count = 0
-        pipe = self.__r.pipeline()
-        for key in self.__r.scan_iter(str(scandate) + '*'):
-            print(f'\t{key}')
-            pipe.delete(key)
-            count += 1
-        pipe.execute()
-        return count
+        :param method: The HTTP method to use, ex GET/SET/PUT.
+        :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
+        :param kwargs: All data to be sent, as a json dict.
+        """
+        print(f'API query to: http://{self.apiurl}{url}')
+        if self.apikey:
+            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
+        else:
+            r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
+        if r.status >= 500:
+            raise Exception(f'Error on server: {r.status}')
+        elif r.status >= 400 and r.status < 500:
+            raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
+        rows = json.loads(r.data.decode('utf-8'))
+        return rows, r.status
+    
+    def __countbarcodes(self, datestamp):
+        payload, status = self.__apiquery('GET','/bc/lastscanned')
+
+        if not payload['success']: raise exception('not authorized')
+
+        barcodes = {}
+        for scangroup in payload['barcodes'].keys():
+            barcodes[scangroup] = self.__lookupUPC(payload['barcodes']['scangroup'])
+
+        return barcodes, payload['tally'], payload['total']
+
     def __lookupUPC(self, barcodes):
         cursor = self.__cnx.cursor(buffered=True)
         parsedbarcodes = {}
@@ -94,22 +121,20 @@ class BarcodeProcessor:
             # only perform queries on numbers only.
             if bc.isdigit():
                 if len(bc) > 14 and bc[:1] == '01':
-                    #if the barcode is over 14 digits it won't match in the system, if the characters are 01 they're not useful anyways.
+                    #if the barcode is over 14 digits it won't match in the system, if the first two characters are 01 they're not useful anyways.
                     bc = bc[2:]
-                # check the orderlog for data if the UPC exists
-                query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc)}'
-                cursor.execute(query)
+                # check the API for data if the UPC exists
+                payload, status = self.__apiquery('GET','/search', **{'upc': bc})
                 # if there is a result substitute sku, and product name where barcode is.
-                if( cursor.rowcount != 0 ):
-                    sku, description = cursor.fetchone()
+                if status == 200:
+                    sku, description = payload['sku'], payload['productdescription']
                     parsedbarcodes[f'{sku:06},    {description}'] = qty
-                else:
+                elif status == 204:
                     #TODO: refactor this
                     #if the first attempt fails try again but with a broader search
-                    query = f'SELECT sku, productdescription FROM orderlog WHERE upc REGEXP {int(bc[2:-1])}'
-                    cursor.execute(query)
+                    payload, status = self.__apiquery('GET','/search', **{'upc': int(bc[2:-1]) })
                     if cursor.rowcount != 0:
-                        sku, description = cursor.fetchone()
+                        sku, description = payload['sku'], payload['productdescription']
                         parsedbarcodes[f'{sku:06}, !! {description}'] = qty # the '!!' indicates loose match
                     else:
                         #if not found in db, put in the UPC.
@@ -118,24 +143,18 @@ class BarcodeProcessor:
                 parsedbarcodes[bc] = qty
         return parsedbarcodes
 
-    def __countBarcodes(self, scandate ):
-        barcodes = {}
-        tally = {}
-        total = 0
-        for key in self.__r.scan_iter(str(scandate) + '*'):
-            print(key)
-            if not f'{scandate}_scanstats' in key:
-                barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
-                tally[key] = self.__sumRedisValues(self.__r.hvals(key))
-                total += tally[key]
-        return barcodes, tally, total
+    def __urlpayload(self, upc, datestamp):
+        return {'machine': True,
+                'upc': upc,
+                'scangroup': self.scangroup,
+                'datestamp': datestamp}
 
     def processCSV(self, file, outfile):
 
         latestscan=0            #
-        scangroup=0             #
+        self.scangroup=0             #
         previousline=None       #
-        previousgroup=scangroup #
+        previousgroup=self.scangroup #
         forReview=[]            #anything that the program deems 'strange'
         scanuser=''             #allow a user to mark that they were the ones scanning, probably never to be used
         inventorytype='liquor'  #set the type of inventory scanned, by default this will be BC LDB Store 100
@@ -156,7 +175,7 @@ class BarcodeProcessor:
                         self.__deleteRedisDB(latestscan)
                     self.__deleteRedisDB(datescanned)
                     latestscan = int(datescanned)
-                    scangroup = 0
+                    self.scangroup = 0
                     forReview=[]
                     scanuser=''
                     inventorytype='liquor'
@@ -167,8 +186,9 @@ class BarcodeProcessor:
                     forReview=[]
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
                 elif( 'DELLAST' in line[3] ):
-                    if( previousline != None ):
-                        self.__r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}',previousline,-1)
+                    rows, status = self.__apiquery('GET','/bc/lastscanned')
+                    if rows['success']:
+                        self.__apiquery('POST', '/bc/scan', **{ 'addremove': 'remove', **self.__urlpayload(rows['last_scanned'], datescanned) })
                 #allow other programs to act on type of scanned inventory
                 elif( 'inventorytype=' in line[3] ):
                     inventorytype = line[3].replace('inventorytype=','')
@@ -178,30 +198,30 @@ class BarcodeProcessor:
 
                 #breaks down the count by pallet
                 elif( 'scangroupincr' in line[3] ):
-                    scangroup = (scangroup + 1 ) % 256
+                    self.scangroup = (self.scangroup + 1 ) % 256
                 elif( 'scangroupdecr' in line[3] ):
-                    scangroup = (scangroup - 1 ) % 256
+                    self.scangroup = (self.scangroup - 1 ) % 256
 
                 else:
                     # increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
-                    self.__r.hincrby(f'{latestscan}_{scangroup}{scanuser}_{inventorytype}', line[3],1)
+                    self.__apiquery('POST', '/bc/scan', **self.__urlpayload(line[3], datescanned))
                     #generate stats, I love stats.
-                    if not 'DOESNOTSCAN' in line[3]:
-                        self.__r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
-                        self.__r.hincrby(f'{latestscan}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
+                    # if not 'DOESNOTSCAN' in line[3]:
+                    #     self.__r.hincrby(f'{latestscan}_scanstats', 'length: %s'%len(line[3]),1)
+                    #     self.__r.hincrby(f'{latestscan}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
                     #if the data on the line is larger than 20 flag it for review.
                     if( len(line[3]) > 20 ):
                         forReview.append(line[3])
                     previousline=line[3]
-                    previousgroup=scangroup
+                    previousgroup=self.scangroup
 
 
 
         self.scannedlist = {}
         self.scannedlist[latestscan] = {}
-        self.scannedlist[latestscan]['receiving_type']=inventorytype
+        # self.scannedlist[latestscan]['receiving_type']=inventorytype
         self.scannedlist[latestscan]['barcodes_by_pallet'], self.scannedlist[latestscan]['_total_by_pallet'], self.scannedlist[latestscan]['_total'] = self.__countBarcodes(latestscan)
-        self.scannedlist[latestscan]['stats4nerds'] = self.__r.hgetall(f'{latestscan}_scanstats')
+        # self.scannedlist[latestscan]['stats4nerds'] = self.__r.hgetall(f'{latestscan}_scanstats')
         if( len(forReview) > 0 ):
             self.scannedlist[latestscan]['_possible_scan_errors'] = forReview
 
@@ -212,11 +232,7 @@ class BarcodeProcessor:
         return
 
 if __name__=='__main__':
-    bc = BarcodeProcessor(os.getenv('REDIS_IP'),
-        os.getenv('REDIS_PORT'),
-        os.getenv('MYSQL_IP'),
-        os.getenv('MYSQL_PORT'),
-        os.getenv('MYSQL_USER'),
-        os.getenv('MYSQL_PASSWORD'), 
-        os.getenv('MYSQL_DATABASE'))
+    bc = BarcodeProcessor(
+        os.getenv('APIURL'),
+        os.getenv('APIKEY'))
     bc.processCSV(sys.argv[1], sys.argv[2])

@@ -44,6 +44,7 @@ services:
       - REDIS_IP=ldb_redis
       - REDIS_PORT=6379
       - LABEL_MAKER=${LABEL_MAKER}
+      - FLASK_SECRET=${FLASK_SECRET}
     restart: always
     ports:
       - 5500:5000

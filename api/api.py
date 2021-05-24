@@ -29,7 +29,7 @@ app = Flask(__name__)
 auto = Autodoc(app)
 #testing purposes only PLEASE CHANGE IN PROD
 #this is literally the example key
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+app.secret_key = bytes(os.getenv("FLASK_SECRET"))
 
 app.config['MYSQL_DATABASE_HOST'] = os.getenv('MYSQL_IP')
 app.config['MYSQL_DATABASE_PORT'] = int(os.getenv('MYSQL_PORT'))
@@ -182,6 +182,27 @@ def __countBarcodes(scandate):
             print(total, tally[key])
     return barcodes, tally, total
 
+@app.route('/bc/countbarcodes', methods=['GET'])
+@auto.doc()
+def bc_countbarcodes():
+    if not 'scanner_terminal' in session:
+        return {'success': False, 'reason': 'not registered'}, 204
+
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+
+    payload = {}
+    payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
+
+    return {'success': True, **payload}, 200
+
+@app.route('/bc/lastscanned', methods=['GET'])
+@auto.doc()
+def bc_lastscan():
+    if not 'scanner_terminal' in session:
+        return {'success': False, 'reason': 'no session info'}
+
+    return {'success': True, 'last_scanned': redis_client.get(f'lastscanned_{session["scanner_terminal"]}') }
+
 @app.route('/bc/scan', methods=['POST'])
 @auto.doc(expected_type='application/json')
 def page_bcscan():
@@ -192,7 +213,7 @@ def page_bcscan():
     upc = escape(request.form.get('upc',0))
     scangroup = escape(request.form.get('scangroup',0))
     addremove = escape(request.form.get('addremove', 'add'))
-    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
 
     redishashkey = f'{datestamp}_ingest_{escape(session["scanner_terminal"])}_{scangroup}'
 
@@ -206,8 +227,11 @@ def page_bcscan():
     else:
         redis_client.hincrby(redishashkey, upc,1)
 
+    redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
+
     payload = {}
-    payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
+    if escape(request.form.get('machine'),True):
+        payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
 
     return {'success': True, **payload}
 
@@ -222,6 +246,27 @@ def __bc_getstatus():
     payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
 
     return payload
+
+def __bc_deleteRedisDB( scandate):
+        print( f'Deleting databases for {scandate}:' )
+        count = 0
+        pipe = redis_client.pipeline()
+        for key in redis_client.scan_iter(str(f'{scandate}_ingest_{escape(session["scanner_terminal"])}') + '*'):
+            print(f'\t{key}')
+            pipe.delete(key)
+            count += 1
+        pipe.execute()
+        return count
+
+@app.route('/bc/deleteall', methods='POST')
+@auto.doc()
+def bc_deleteall():
+    if not 'scanner_terminal' in session:
+        return {'success': False, 'reason': 'nothing to do'}
+    
+    count = __bc_deleteRedisDB(escape(request.form.get('scandate','')))
+
+    return {'success': True, 'result': f'Deleted {count} tables.'}
 
 
 @app.route('/bc/linksku', methods=['POST'])
@@ -600,24 +645,26 @@ def __misc_badbarcode():
 @auto.doc(expected_type='application/json')
 def itemsearch():
     """Returns OSR data based on SKU or UPC
+
+    If no item matches search parameters, this will return HTTP status 204
     
     :param str upc: Can be either SKU or UPC.
     """
     search = escape(request.args.get('upc',''))
 
     if not search.isdigit():
-        return {'success': False}
+        return {'success': False}, 406
 
-    query = f'SELECT sku, upc, qty, productdescription FROM orderlog WHERE sku={search} OR upc={search}'
+    query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={search} OR upc REGEXP {search}'
     print(query)
     g.cur.execute(query)
 
     rows = g.cur.fetchall()
     print(rows)
     if len(rows) == 0:
-        return {'success': False}
+        return {'success': False}, 204
 
-    return rows[len(rows)-1]
+    return rows[len(rows)-1], 200
     #sku, upc, qty, productdescription = rows[len(rows)-1]
 
     #return {'sku': sku, 'upc':upc, 'productdescription': productdescription}
