@@ -22,6 +22,7 @@ import datetime
 import re
 import random
 import string
+import time
 
 import requests
 
@@ -106,7 +107,7 @@ class BarcodeProcessor:
         elif r.status_code >= 400:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
-
+        time.sleep(0.1)
         return r.json(), r.status_code
     
     def __countbarcodes(self, datestamp):

@@ -76,7 +76,7 @@ class arinvoice:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
         
-
+        time.sleep(0.1)
         return r.json(), r.status_code
 
     # write price report to file, later will make this a redis DB
