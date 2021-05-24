@@ -79,7 +79,7 @@ class BarcodeProcessor:
         self.apiurl = apiurl
         self.scannedlist = {}
 
-        if not self.__apiquery(method='GET', url='/bc/register', **{'check': True})['success']:
+        if not self.__apiquery(method='GET', url='/bc/register', **{'check': True})[0]['success']:
             self.__apiquery(method='POST', url='/bc/register', **{'scanner_terminal': 'processor_'.join(random.choices(string.ascii_uppercase + string.digits, k=4))})
 
     def __apiquery(self, method='GET', url='', **kwargs):
