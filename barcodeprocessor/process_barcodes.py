@@ -101,10 +101,10 @@ class BarcodeProcessor:
                 r = requests.post(f'http://{self.apiurl}{url}', cookies=self.cookies, data={**kwargs})
             else:
                 r = requests.get(f'http://{self.apiurl}{url}', cookies=self.cookies, params={**kwargs})
-        if r.status >= 500:
+        if r.status_code >= 500:
             raise Exception(f'Error on server: {r.status}')
-        elif r.status >= 400:
-            if r.status == 401: raise Exception('Not authorized')
+        elif r.status_code >= 400:
+            if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
         self.cookies = requests.cookies.RequestsCookiesJar()
