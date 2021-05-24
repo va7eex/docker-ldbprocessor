@@ -178,7 +178,7 @@ def __countBarcodes(scandate):
         key = key.decode()
         print(key)
         if not f'{scandate}_scanstats' in key:
-#            barcodes[key] = self.__lookupUPC(self.__r.hgetall(key))
+            barcodes[key] = redis_client.hgetall(key)
             tally[key] = __sumRedisValues(redis_client.hvals(key))
             total += tally[key]
             print(total, tally[key])
