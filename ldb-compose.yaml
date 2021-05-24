@@ -57,7 +57,7 @@ services:
   #apps, will build to order
   ## Barcode processor
   ldb_processor_bc:
-    container_name: ldb_processor_bc
+    container_name: ldb_processor_bc_api
     build:
       context: barcodeprocessor/
       dockerfile: Dockerfile
@@ -68,7 +68,7 @@ services:
       - APIURL="ldb_api:5000"
       - APIKEY=${APIKEY}
     volumes:
-      - /home/bibwsstaff/ldbinvoice2:/var/ldbinvoice
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
     depends_on:
       - ldb_api
