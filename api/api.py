@@ -201,7 +201,10 @@ def bc_countbarcodes():
 @auto.doc()
 def bc_lastscan():
     if not 'scanner_terminal' in session:
-        return {'success': False, 'reason': 'no session info'}
+        return {'success': False, 'reason': 'no session info'}, 401
+    
+    if not redis_client.exists(f'lastscanned_{session["scanner_terminal"]}'):
+        return {'success': False, 'reason': 'nothing logged.'}, 204
 
     return {'success': True, 'last_scanned': redis_client.get(f'lastscanned_{session["scanner_terminal"]}') }
 
@@ -210,7 +213,7 @@ def bc_lastscan():
 def page_bcscan():
     """Scan into master record for today."""
     if not 'scanner_terminal' in session:
-        return{ 'success': False, 'reason': 'not registered'}
+        return { 'success': False, 'reason': 'not registered'}, 401
 
     upc = escape(request.form.get('upc',0))
     scangroup = escape(request.form.get('scangroup',0))
@@ -264,7 +267,7 @@ def __bc_deleteRedisDB( scandate):
 @auto.doc()
 def bc_deleteall():
     if not 'scanner_terminal' in session:
-        return {'success': False, 'reason': 'nothing to do'}, 204
+        return {'success': False, 'reason': 'nothing to do'}, 401
     
     count = __bc_deleteRedisDB(escape(request.form.get('scandate','')))
 

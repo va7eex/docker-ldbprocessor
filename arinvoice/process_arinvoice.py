@@ -66,7 +66,8 @@ class arinvoice:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
         if r.status >= 500:
             raise Exception(f'Error on server: {r.status}')
-        elif r.status >= 400 and r.status < 500:
+        elif r.status >= 400:
+            if r.status == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
         rows = json.loads(r.data.decode('utf-8'))

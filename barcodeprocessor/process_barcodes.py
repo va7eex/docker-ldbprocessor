@@ -97,7 +97,8 @@ class BarcodeProcessor:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
         if r.status >= 500:
             raise Exception(f'Error on server: {r.status}')
-        elif r.status >= 400 and r.status < 500:
+        elif r.status >= 400:
+            if r.status == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
         
         rows = json.loads(r.data.decode('utf-8'))
@@ -187,7 +188,7 @@ class BarcodeProcessor:
                 #note: theres a button on the Motorola CS3000 that does exactly this, but better
                 elif( 'DELLAST' in line[3] ):
                     rows, status = self.__apiquery('GET','/bc/lastscanned')
-                    if rows['success']:
+                    if status == 200:
                         self.__apiquery('POST', '/bc/scan', **{ 'addremove': 'remove', **self.__urlpayload(rows['last_scanned'], datescanned) })
                 #allow other programs to act on type of scanned inventory
                 elif( 'inventorytype=' in line[3] ):

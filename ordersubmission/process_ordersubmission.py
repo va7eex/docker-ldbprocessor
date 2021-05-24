@@ -57,7 +57,7 @@ class OrderSubmissionReport:
         self.apikey = apikey
 
     def __apiquery(self, method='GET', url='', **kwargs):
-       """
+        """
         Send an API query.
 
         :param method: The HTTP method to use, ex GET/SET/PUT.
@@ -69,9 +69,13 @@ class OrderSubmissionReport:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={'apikey': self.apikey, **kwargs})
         else:
             r = self.http.request(f'{method}', f'http://{self.apiurl}{url}', fields={**kwargs})
-
-        if r.status != 200:
-            raise Exception(f'HTTP Response {r.status}')
+        if r.status >= 500:
+            raise Exception(f'Error on server: {r.status}')
+        elif r.status >= 400:
+            if r.status == 401:
+                raise Exception('Not authorized')
+            raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status}')
+            
         print(f'DEBUG: {r.data}')
         rows = json.loads(r.data.decode('utf-8'))
         return rows, r.status
