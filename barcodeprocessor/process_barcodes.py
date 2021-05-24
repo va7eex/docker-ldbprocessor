@@ -111,7 +111,7 @@ class BarcodeProcessor:
         return r.json(), r.status_code
     
     def __countBarcodes(self, datestamp):
-        payload, status = self.__apiquery('GET','/bc/bc_countbarcodes')
+        payload, status = self.__apiquery('GET','/bc/countbarcodes')
 
         if status == 401: raise exception('not authorized')
 
