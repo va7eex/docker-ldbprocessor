@@ -156,7 +156,24 @@ class BarcodeProcessor:
                 'scangroup': self.scangroup,
                 'datestamp': datestamp}
 
+    def __santitizeline(self, line):
+        line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
+        line = line.replace('\n','').split(',')
+        datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
+        return datescanned + ','.join(line[1:])
+
+    def __findlastdate(self, file):
+        with open(file, 'r') as f:
+            lines = f.read().splitlines()
+            last_line = self.__santitizeline(lines[-1]).split(',')
+            return last_line[0]
+
     def processCSV(self, file, outfile):
+
+        latestdate = self.__findlastdate(file)
+
+        #if this list already exists, delete it.
+        payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestdate})
 
         latestscan=0            #
         self.scangroup=0             #
@@ -166,26 +183,13 @@ class BarcodeProcessor:
         scanuser=''             #allow a user to mark that they were the ones scanning, probably never to be used
         inventorytype='liquor'  #set the type of inventory scanned, by default this will be BC LDB Store 100
 
-        with open(file) as f:
+        with open(file,'r') as f:
             #for line in reversed(f): #processing lines from bottom to top.
             for line in f: #just in case we need this later
-                line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
-                line = line.replace('\n','').split(',')
-                datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
+                line = self.__santitizeline(line).split(',')
+                datescanned = line[0]
 
-                #we are reversing the order of which things are processed
-                if int(datescanned) < latestscan:
-                    break
-
-                if( int(datescanned) > latestscan ):
-                    if( latestscan > 0 ):
-                        payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': latestscan})
-                    payload, status = self.__apiquery('POST','/bc/deleteall',**{'scandate': datescanned})
-                    latestscan = int(datescanned)
-                    self.scangroup = 0
-                    forReview=[]
-                    scanuser=''
-                    inventorytype='liquor'
+                if latestdate != datescanned: continue
 
                 #if theres some hideous scan error, you can start from the beginning or go back one
                 if( 'DELALL' in line[3] ):
