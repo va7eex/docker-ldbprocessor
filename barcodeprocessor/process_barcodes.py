@@ -107,11 +107,11 @@ class BarcodeProcessor:
         elif r.status_code >= 400:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
-        time.sleep(0.1)
+        time.sleep(0.01)
         return r.json(), r.status_code
     
     def __countBarcodes(self, datestamp):
-        payload, status = self.__apiquery('GET','/bc/countbarcodes')
+        payload, status = self.__apiquery('GET','/bc/countbarcodes', **{'datestamp': datestamp})
 
         if status == 401: raise exception('not authorized')
 
