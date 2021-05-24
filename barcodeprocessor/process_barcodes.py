@@ -81,7 +81,11 @@ class BarcodeProcessor:
         self.__s = requests.Session() 
 
         if not self.__apiquery(method='GET', url='/bc/register', **{'check': True})[0]['success']:
-            self.__apiquery(method='POST', url='/bc/register', **{'scanner_terminal': f'bcprocessor_{random.randint(1000,9999)}', 'headless': True})
+            if os.getenv('CONTAINER_ID'):
+                ID = os.getenv('CONTAINER_ID')
+            else:
+                ID = random.randint(1000,9999)
+            self.__apiquery(method='POST', url='/bc/register', **{'scanner_terminal': f'bcprocessor_{ID}', 'headless': True})
 
     def __apiquery(self, method='GET', url='', **kwargs):
         """
@@ -110,19 +114,7 @@ class BarcodeProcessor:
         time.sleep(0.01)
         return r.json(), r.status_code
     
-    def __countBarcodes(self, datestamp):
-        payload, status = self.__apiquery('GET','/bc/countbarcodes', **{'datestamp': datestamp})
-
-        print(payload)
-
-        barcodes = {}
-        for scangroup in payload['barcodes'].keys():
-            barcodes[scangroup] = self.__lookupUPC(payload['barcodes']['scangroup'])
-
-        return barcodes, payload['tally'], payload['total']
-
     def __lookupUPC(self, barcodes):
-        cursor = self.__cnx.cursor(buffered=True)
         parsedbarcodes = {}
         for bc, qty in barcodes.items():
             # only perform queries on numbers only.
@@ -140,7 +132,7 @@ class BarcodeProcessor:
                     #TODO: refactor this
                     #if the first attempt fails try again but with a broader search
                     payload, status = self.__apiquery('GET','/search', **{'upc': int(bc[2:-1]) })
-                    if cursor.rowcount != 0:
+                    if status == 204:
                         sku, description = payload['sku'], payload['productdescription']
                         parsedbarcodes[f'{sku:06}, !! {description}'] = qty # the '!!' indicates loose match
                     else:
@@ -149,6 +141,17 @@ class BarcodeProcessor:
             else:
                 parsedbarcodes[bc] = qty
         return parsedbarcodes
+
+    def __countBarcodes(self, datestamp):
+        payload, status = self.__apiquery('GET','/bc/countbarcodes', **{'datestamp': datestamp})
+
+        print(payload)
+
+        barcodes = {}
+        for scangroup in payload['barcodes'].keys():
+            barcodes[scangroup] = self.__lookupUPC(payload['barcodes']['scangroup'])
+
+        return barcodes, payload['tally'], payload['total']
 
     def __urlpayload(self, upc, datestamp):
         return {'machine': True,

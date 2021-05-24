@@ -6,7 +6,8 @@ ARG TZ=America/Vancouver
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV APIURL=127.0.0.1
-ENV APIKEY=''
+ENV APIKEY=
+ENV CONTAINER_ID=
 
 RUN apt update && \
     apt upgrade -y &&\

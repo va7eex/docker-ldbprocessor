@@ -67,6 +67,7 @@ services:
     environment:
       - APIURL=ldb_api:5000
       - APIKEY=${APIKEY}
+      - CONTAINER_ID=1234
     volumes:
       - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     restart: always
