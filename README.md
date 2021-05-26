@@ -45,3 +45,7 @@ This container processes LDB Store 100 Accounts Receivable (AR) invoices. It acc
 
 
 AR Invoices  are shipped as .xls formatted files.
+
+# License
+
+PureCSS is used with respect to [the Pure CSS BSD license](https://github.com/pure-css/pure/blob/master/LICENSE)
