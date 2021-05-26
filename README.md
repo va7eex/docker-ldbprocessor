@@ -1,12 +1,14 @@
 # docker-ldbprocessor
 
-Tools to assist in receiving of inventory from the LDB Store 100 to Infospec's Profitek backend.
+Tools to assist in receiving of inventory from the LDB Store 100 to Infospec's Profitek backend. This branch, `api`, is intended to work with existing CS3000 infra as detailed below but also with new Zebra Mobile Computers or Symbol MC40s.
 
-After cloning reposity run `createconstants.sh` wizard to populate ldb-compose.yaml and constants.py. Once the wizard is completed create all containers by running `docker-compose -f docker-ldbprocessor/ldb-compose.yaml up -d`.
+After cloning reposity, edit `.env` and fill in secrets. Followed by running `docker-compose -f ldb-compose.yaml up -d --build`. The system can be accessed either by an SMB mounted directory or from `$IP:5500/bc`.
 
 The mounted volume in ldb-compose.yaml should be a SMB directory network accessible unless it is accessible from the computer docker is running on.
 
 If running SMB: the user and/or group of each docker app must have read/write permissions in directory.
+
+**PLEASE NOTE** That this project is unlikely to receive any further updates.
 
 # LDBprocessor_bc
 
