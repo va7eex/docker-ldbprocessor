@@ -5,6 +5,7 @@ import os
 import csv
 import string
 import random
+import json
 from datetime import datetime
 
 from flask import Flask
@@ -40,7 +41,7 @@ mysql = MySQL(cursorclass=DictCursor)
 mysql.init_app(app)
 
 app.config['REDIS_URL'] = f'redis://{os.getenv("REDIS_IP")}:{os.getenv("REDIS_PORT")}/0'
-redis_client = FlaskRedis(app)
+redis_client = FlaskRedis(app, decode_responses=True)
 
 def __buildtables():
 
@@ -110,11 +111,17 @@ def page_ar():
 def page_bc():
     if not 'scanner_terminal' in session:
         return redirect(url_for('page_bc_register'))
-    return render_template('bc.html')
+    return render_template('receiving.html')
 
 @app.route('/osr')
 def osrpage():
     return render_template('osr.html')
+
+@app.route('/inv')
+def page_inv():
+    if not 'scanner_terminal' in session:
+        return redirect(url_for('page_bc_register'))
+    return render_template('inventory.html')
 
 @app.route('/labelmaker')
 def page_labelmaker():
@@ -154,7 +161,7 @@ def page_bc_register():
         if 'check' in request.args:
             return {'success': bool('scanner_terminal' in session) }
         if not 'scanner_terminal' in session:
-            return render_template('bcregister.html'), 204
+            return render_template('bcregister.html')
         else:
             return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
 
@@ -169,15 +176,38 @@ def page_bc_register():
 def __sumRedisValues( list ):
     return  sum([int(i) for i in list if type(i)== int or i.isdigit()])
 
+def __crossreference_UPCs(redisvalues):
+    processedredisvalues = {}
+    for key, qty in redisvalues.items():
 
-def __countBarcodes(scandate):
+        result = __itemsearch(key)
+        if len(key) > 14 and key[:1] == '01':
+            #if the barcode is over 14 digits it won't match in the system, if the first two characters are 01 they're not useful anyways.
+            key = key[2:]
+            result = __itemsearch(key)
+        if result:
+            key = f"{result[len(result)-1]['sku']},    {result[len(result)-1]['productdescription']}"
+            processedredisvalues[key] = qty
+        else:
+            result = __itemsearch(key[2:-1])
+            if result:
+                key = f"{result[len(result)-1]['sku']}, !! {result[len(result)-1]['productdescription']}"
+                processedredisvalues[key] = qty
+            else:
+                processedredisvalues[key] = qty
+    return processedredisvalues
+
+def __countBarcodes(scandate, crossref=False):
     barcodes = {}
     tally = {}
     total = 0
     for key in redis_client.scan_iter(match=f'{scandate}_ingest_*'):
         key = str(key)
         print(key)
-        barcodes[key] = redis_client.hgetall(key)
+        if crossref:
+            barcodes[key] = __crossreference_UPCs(redis_client.hgetall(key))
+        else:
+            barcodes[key] = redis_client.hgetall(key)
         tally[key] = __sumRedisValues(redis_client.hvals(key))
         total += tally[key]
         print(total, tally[key])
@@ -214,12 +244,14 @@ def page_bcscan():
     if not 'scanner_terminal' in session:
         return { 'success': False, 'reason': 'not registered'}, 401
 
-    upc = escape(request.form.get('upc',0))
+    upc       = escape(request.form.get('upc',0))
     scangroup = escape(request.form.get('scangroup',0))
     addremove = escape(request.form.get('addremove', 'add'))
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
 
-    redishashkey = f'{datestamp}_ingest_{escape(session["scanner_terminal"])}_{scangroup}'
+    print (request.form)
+
+    redishashkey = f'{datestamp}_ingest_{escape(session["scanner_terminal"])}_{scangroup.zfill(3)}'
 
     if 'remove' in addremove:
         if not redis_client.hexists(redishashkey,upc):
@@ -246,10 +278,10 @@ def page_bcscan():
 def __bc_getstatus():
     """Returns data related to barcode scans."""
 
-    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y-%m-%d')))
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
 
     payload = {}
-    payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
+    payload['barcodes'], payload['_tally'], payload['__total'] = __countBarcodes(datestamp)
 
     return payload
 
@@ -270,7 +302,7 @@ def bc_deleteall():
     if not 'scanner_terminal' in session:
         return {'success': False, 'reason': 'nothing to do'}, 401
     
-    count = __bc_deleteRedisDB(escape(request.form.get('scandate','')))
+    count = __bc_deleteRedisDB(escape(request.form.get('scandate',datetime.today().strftime('%Y%m%d'))))
 
     return {'success': True, 'result': f'Deleted {count} tables.'}
 
@@ -279,7 +311,17 @@ def bc_deleteall():
 @auto.doc()
 def __bc_linksku():
     pass
-    
+
+@app.route('/bc/exportscanlog', methods=['POST'])
+@auto.doc(expected_type='application/json')
+def bc_exportlog():
+
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+
+    with open(f'/var/ldbinvoice/{datestamp}_receiving_scan_log.txt', 'w') as f:
+        json.dump(__bc_getstatus(), f, indent=2, sort_keys=True)
+
+    return {'success': True}
 
 @app.route('/bc/del', methods=['DELETE'])
 @auto.doc()
@@ -647,6 +689,14 @@ def __misc_badbarcode():
 # GUI
 #
 
+def __itemsearch(upc):
+    query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={search} OR upc REGEXP {search}'
+    print(query)
+    g.cur.execute(query)
+
+    rows = g.cur.fetchall()
+    return rows
+
 @app.route('/search', methods=['GET'])
 @auto.doc(expected_type='application/json')
 def itemsearch():
@@ -656,16 +706,12 @@ def itemsearch():
     
     :param str upc: Can be either SKU or UPC.
     """
-    search = escape(request.args.get('upc',''))
+    upc = escape(request.args.get('upc',''))
 
-    if not search.isdigit():
+    if not upc.isdigit():
         return {'success': False}, 406
 
-    query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={search} OR upc REGEXP {search}'
-    print(query)
-    g.cur.execute(query)
-
-    rows = g.cur.fetchall()
+    rows = __itemsearch(upc)
     print(rows)
     if len(rows) == 0:
         return {'success': False}, 204
@@ -746,7 +792,8 @@ def __label_print():
     :param int qty: Quantity of labels to be printed. Default 12.
 
     Note: \'Name\' and \'productdescription\' are synonymous and exist for compatability only.
-"""
+    """
+
     printer = min(int(escape(request.form.get('printer',0))),0)
     if not printer: printer = 0
 
@@ -768,3 +815,84 @@ def __label_print():
 
 if __name__ == "__main__":
     app.run()
+
+
+#
+# Inventory
+#
+
+def __countBarcodes_inv():
+    barcodes = {}
+    tally = {}
+    total = 0
+    for key in redis_client.scan_iter(match=f'inventory_*'):
+        key = str(key)
+        print(key)
+        barcodes[key] = redis_client.hgetall(key)
+        tally[key] = __sumRedisValues(redis_client.hvals(key))
+        total += tally[key]
+        print(total, tally[key])
+    return barcodes, tally, total
+
+@app.route('/inv/scan', methods=['POST'])
+@auto.doc(expected_type='application/json')
+def page_invscan():
+    """Scan into master record for today."""
+
+    if not 'scanner_terminal' in session:
+        return { 'success': False, 'reason': 'not registered'}, 401
+
+    upc = escape(request.form.get('upc',0))
+    scangroup = escape(request.form.get('scangroup',0))
+    addremove = escape(request.form.get('addremove', 'add'))
+    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+
+    redishashkey = f'inventory_{escape(session["scanner_terminal"])}'
+
+    if 'remove' in addremove:
+        if not redis_client.hexists(redishashkey,upc):
+            return {'success': True, 'reason': 'nothing to do'}
+        if int(redis_client.hget(redishashkey,upc)) > 2:
+            redis_client.hincrby(redishashkey, upc,-1)
+        elif (redis_client.hget(redishashkey,upc)) <= 1:
+            redis_client.hset(redishashkey,upc,0)
+    else:
+        redis_client.hincrby(redishashkey, upc,1)
+        print(redishashkey, upc)
+        redis_client.expire(redishashkey, (60*60*24)*3) #expire this in 3 days to keep DB size small.
+
+    redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
+
+    payload = {}
+    if not 'machine' in request.form:
+        payload = {'upc': upc, 'quantity': int(redis_client.hget(redishashkey,upc))}
+
+    return {'success': True, **payload}
+
+@app.route('/inv/exportscanlog', methods=['POST'])
+@auto.doc(expected_type='application/json')
+def inv_exportlog():
+
+    date = datetime.today().strftime('%Y%m%d')
+
+    redishashkey = f'inventory_{escape(session["scanner_terminal"])}'
+    somedict = redis_client.hgetall(redishashkey)
+    print(somedict)
+
+    with open(f'/var/ldbinvoice/{date}_inventory_scan_log.txt', 'w') as f:
+        for k,v in somedict.items():
+            line = f"{k},{v}"
+            print(line)
+            f.write(f'{line}\n')
+
+    return {'success': True}
+
+@app.route('/inv/clearall', methods=['POST'])
+@auto.doc(expected_type='application/json')
+def inv_clearall():
+
+    redishashkey = f'inventory_{escape(session["scanner_terminal"])}'
+
+    redis_client.delete(redishashkey)
+
+    return {'success': True}

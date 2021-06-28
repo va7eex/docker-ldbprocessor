@@ -33,35 +33,23 @@
         <script>
             $(document).ready(function(){
                 $.get('/bc/getstatus', $(this).serialize(), function(response){
-                    $("#statusreport-total").val(response.total);
-                    $("#statusreport-tally").val(response.tally);
+                    $("#statusreport-upc").val('');
+                    $("#statusreport-quantity").val('');
                     return false
                 });
-                $('#barcodescan').submit(function(){
+                $('#inventoryscan').submit(function(){
 
-                    var scangroup = $('#barcodescan-scangroup').val();
-                    $('#productupdate-barcode').val($('#barcodescan-barcode').val())
+                    $('#productupdate-inventory').val($('#inventoryscan-inventory').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
-                        $("#statusreport-total").val(response.total);
-                        $("#statusreport-tally").val(response.tally);
+                        $("#statusreport-upc").val(response.upc);
+                        $("#statusreport-quantity").val(response.quantity);
                     },'json');
-                    $.get('/search',$(this).serialize(), function(response){
-                        if( 'success' in response && !response.success ) {
-                            $('#productupdate-barcode').css('background-color', 'rgb(202, 60, 60)');
-                            $('#productupdate-sku').val('');
-                        } else {
-                            $('#productupdate-barcode').css('background-color', '');
-                            $('#productupdate-barcode').val(response.upc);
-                            $('#productupdate-sku').val(response.sku);
-                        }
-                    }, 'json')
 
                     //visual feedback something happened.
-                    $('#barcodescan-submit').css('background-color', 'rgb(28, 184, 65)');
-                    setTimeout(function(){ $('#barcodescan-submit').css('background-color', ''); }, 100);
+                    $('#inventoryscan-submit').css('background-color', 'rgb(28, 184, 65)');
+                    setTimeout(function(){ $('#inventoryscan-submit').css('background-color', ''); }, 100);
 
                     $(this).trigger("reset");
-                    $('#barcodescan-scangroup').val(scangroup);
                     return false;
                 });
                 $('#productupdate').submit(function(){
@@ -76,10 +64,25 @@
                     $('#productupdate-barcode').css('background-color', '');
                     return false;
                 });
+                $('#exportlist').submit(function(){
+                    var answer = window.confirm("Export list to file?");
+                    if (answer) {
+                        $.post($(this).attr('action'), $(this).serialize(), function(response){
+                            $("#statusreport-upc").val('');
+                            $("#statusreport-quantity").val('');
+                        },'json');
+                    }
+                    else {
+                        //some code
+                    }
+                    return false;
+                });
                 $('#dellist').submit(function(){
                     var answer = window.confirm("Delete all?");
                     if (answer) {
                         $.post($(this).attr('action'), $(this).serialize(), function(response){
+                            $("#statusreport-upc").val('');
+                            $("#statusreport-quantity").val('');
                         },'json');
                     }
                     else {
@@ -90,18 +93,13 @@
             });
         </script>
         <div>
-        <form id='barcodescan' class="pure-form pure-form-aligned" action="/bc/scan" method="post">
+        <form id='inventoryscan' class="pure-form pure-form-aligned" action="/inv/scan" method="post">
             <fieldset>
-                <legend id="barcodescan-legend">Barcode Scanner</legend>
+                <legend id="inventoryscan-legend">Barcode Scanner</legend>
                 <div class="pure-control-group">
-                    <label for="barcodescan-barcode">Barcode</label>
-                    <input type="text" id="barcodescan-barcode" name="upc" placeholder="Barcode" required="" autofocus/>
+                    <label for="inventoryscan-inventory">Barcode</label>
+                    <input type="text" id="inventoryscan-inventory" name="upc" placeholder="Barcode" required="" autofocus/>
                     <span class="pure-form-message-inline desktop-only">Scan one barcode per box, scan the largest barcode on the box.</span>
-                </div>
-                <div class="pure-control-group">
-                    <label for="barcodescan-scangroup">Scan Group</label>
-                    <input type="number" id="barcodescan-scangroup" name="scangroup" placeholder="0" value="0" min="0" max="255" required=""/>
-                    <span class="pure-form-message-inline desktop-only">Used to differentiate between groups of objects</span>
                 </div>
                 <div class="pure-control-group">
                     <label for="checkbox-radio-option-two" class="pure-radio desktop-only"> </label>
@@ -110,7 +108,6 @@
                 </div>
                 <div class='pure-controls'>
                         <button id='barcodescan-submit' type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
-                        <button type="submit" class="pure-button" name="noscan" formnovalidate>NO SCAN</button>
                 </div>
             </fieldset>
         </form>
@@ -136,21 +133,30 @@
         <form id='statusreport' class='pure-form pure-form-aligned' action='/bc/getstatus' method='get'>
             <legend id="statusreport-legend">Status Report</legend>
             <div class="pure-control-group">
-                <label for="statusreport-tally">Tally</label>
-                <input type="text" id="statusreport-tally" name="upc" placeholder="Tally" readonly=''/>
+                <label for="statusreport-upc">UPC</label>
+                <input type="text" id="statusreport-upc" name="upc" placeholder="UPC" readonly/>
                 <span class="pure-form-message-inline desktop-only">placeholder</span>
             </div>
             <div class="pure-control-group">
-                <label for="statusreport-total">Total</label>
-                <input type="text" id="statusreport-total" name="upc" placeholder="Total" readonly=''/>
+                <label for="statusreport-quantity">Total</label>
+                <input type="text" id="statusreport-quantity" name="quantity" placeholder="Quantity" readonly/>
                 <span class="pure-form-message-inline desktop-only">Total number of products scanned.</span>
             </div>
         </form>
-        <form id='dellist' class="pure-form pure-form-aligned" action="/bc/clearall", method="delete">
+        <form id='exportlist' class="pure-form pure-form-aligned" action="/inv/exportscanlog", method="post">
             <fieldset>
-                <legend>Delete:</legend>
+                <legend id="statusreport-legend">Actions</legend>
+                <div class="pure-controls">
+                <button type="submit" class="pure-button button-success" background="0xca3c3c">Export List</button>
+                <span class="pure-form-message-inline desktop-only">Export scan log to file.</span>
+                </div>
+            </fieldset>
+        </form>
+        <form id='dellist' class="pure-form pure-form-aligned" action="/inv/clearall", method="post">
+            <fieldset>
                 <div class="pure-controls">
                 <button type="submit" class="pure-button button-error" background="0xca3c3c">Delete List</button>
+                <span class="pure-form-message-inline desktop-only">Delete full list. USE WITH CAUTION.</span>
                 </div>
             </fieldset>
         </form>

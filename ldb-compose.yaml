@@ -46,6 +46,8 @@ services:
       - LABEL_MAKER=${LABEL_MAKER}
       - FLASK_SECRET=${FLASK_SECRET}
     restart: always
+    volumes:
+      - /home/bibwsstaff/ldbinvoice:/var/ldbinvoice
     ports:
       - 5500:5000
     networks:
