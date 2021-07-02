@@ -193,8 +193,6 @@ class arinvoice:
         print(len(rows))
 
         for row in rows.values():
-            if not row['success']: 
-                raise Exception()
             self.__apiquery('POST', '/labelmaker/print', **row)
 
     def processCSV(self, inputfile):
