@@ -142,7 +142,7 @@ class arinvoice:
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
         for row in rows.values():
-            rows, status = self.__apiquery('PUT', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
+            rows, status = self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
         
         self.__itmdb_checkchange(invoicedate)
 
