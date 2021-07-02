@@ -440,7 +440,7 @@ def __osr_addlineitem():
 # ARinvoice
 #
 
-@app.route('/ar/pricechange', methods=['GET','PUT'])
+@app.route('/ar/pricechange', methods=['GET','POST'])
 @auto.doc(expected_type='application/json', args={
     'invoicedate': 'Date of invoice in YYYY-MM-DD',
     'sku': 'SKU of item',
@@ -455,7 +455,7 @@ def __ar_pricechange():
     :param float price: Price of item.
     """
 
-    if request.method == 'PUT':
+    if request.method == 'POST':
 
         sku = escape(request.form.get('sku','0'))
         price = escape(request.form.get('price','0.0'))
