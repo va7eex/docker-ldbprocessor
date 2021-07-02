@@ -13,7 +13,7 @@ FILEPATH=/var/ldbinvoice
 inotifywait -m $FILEPATH -e close_write -e moved_to |
     while read path action file; do
         echo "The file '$file' appeared in directory '$path' via '$action'"
-        if [[ $file =~ XXARNEWINVOICE_[0-9]+_[0-9]+\.[Xx][Ll][Ss]$ ]]; then
+        if [[ $file =~ XXARNEWINVOICE_[0-9]+_[0-9]+\.[XxLlSs]{3,4}$ ]]; then
 			echo 'found '$path$file
 			mv $path$file $path$file.bak
 			in2csv --format xls $path$file.bak > /tmp/"${file%.*}.csv"

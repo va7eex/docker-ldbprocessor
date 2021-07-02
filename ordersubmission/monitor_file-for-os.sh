@@ -14,7 +14,7 @@ IMPORTPATH=/var/import
 inotifywait -m $IMPORTPATH -m $FILEPATH -e close_write -e moved_to |
     while read path action file; do
         echo "The file '$file' appeared in directory '$path' via '$action'"
-        if [[ $file =~ XXOMWOSRPDF_[0-9]+_[0-9]+\.[Xx][Ll][Ss] ]]; then
+        if [[ $file =~ XXOMWOSRPDF_[0-9]+_[0-9]+\.[XxLlSs]{3,4}$ ]]; then
 		echo 'found '$file
 		html2csv $path$file -o /tmp/"${file%.*}.csv"
 		echo 'processing OSRPDF'
