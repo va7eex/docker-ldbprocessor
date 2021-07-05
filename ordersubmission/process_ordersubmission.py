@@ -101,8 +101,7 @@ class OrderSubmissionReport:
             return
 
     #    query = ("SELECT price, lastupdated FROM pricechangelist WHERE sku=%s"%(sku))
-        rows = self.__apiquery('GET', '/osr/getorder', **{'ordernumber': ordernumber})
-
+        rows, status = self.__apiquery('GET', '/osr/getorder', **{'ordernumber': ordernumber})
         return rows
 
     def __insertintodatabase(self, line, table, ordernumber, orderdate, thirdparty):

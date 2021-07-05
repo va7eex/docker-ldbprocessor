@@ -411,6 +411,7 @@ def __osr_getorder():
     details = g.cur.fetchone()
     returnrows = {}
     returnrows['items'] = rows
+    print(f'{returnrows} || {details}')
     #for row in rows:
     #    returnrows['items'].append(rows.pop(0)
     return { **returnrows, **details}
@@ -424,13 +425,13 @@ def __osr_getorder():
 def __osr_addlineitem():
     """Add a line item from an Order Submission Report to the database.
     """
-    ordnum = escape(request.args.get('ordnum','1'))
-    orddate = escape(request.args.get('orddate','19990101'))
-    thirdparty = escape(request.args.get('thirdparty','false'))
+    ordernumber = escape(request.form.get('ordernumber','1'))
+    orderdate = escape(request.form.get('orderdate','19990101'))
+    thirdparty = escape(request.form.get('thirdparty',False))
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemOS(**restofrequest)
 
-    query = f'INSERT INTO orderlog (ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordnum}, {orddate}, {li.getvaluesconcat()}, {thirdparty} )'
+    query = f'INSERT INTO orderlog (ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordernumber}, \'{orderdate}\', {li.getvaluesconcat()}, {thirdparty} )'
     g.cur.execute(query)
 
     return li.getall()
