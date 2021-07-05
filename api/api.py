@@ -424,9 +424,9 @@ def __osr_getorder():
 def __osr_addlineitem():
     """Add a line item from an Order Submission Report to the database.
     """
-    ordnum = escape(request.args.get('ordnum',''))
-    orddate = escape(request.args.get('orddate',''))
-    thirdparty = escape(request.args.get('thirdparty',''))
+    ordnum = escape(request.args.get('ordnum','1'))
+    orddate = escape(request.args.get('orddate','19990101'))
+    thirdparty = escape(request.args.get('thirdparty','false'))
     restofrequest = request.form.to_dict(flat=True)
     li = LineItemOS(**restofrequest)
 
