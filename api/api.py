@@ -473,8 +473,8 @@ def __ar_pricechange():
             oldprice = results['price']
             oldlastupdated = results['lastupdated']
 
-        if float(results['price']) == float(price):
-            return {'newitem': False, **results }
+            if float(results['price']) == float(price):
+                return {'newitem': False, **results }
 
         query = f'INSERT INTO iteminfolist (sku, price) VALUES ({sku},{price}) ON DUPLICATE KEY UPDATE price={price}, oldprice={oldprice}, oldlastupdated=\'{oldlastupdated}\''
         g.cur.execute(query)
