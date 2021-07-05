@@ -72,9 +72,15 @@ class LineItemAR(LineItem):
 
         print(vars, len(vars))
 
+        if not (kwargs or vars):
+            raise Exception('No data available')
+        
         #if vars is not none and doesn't match our expected data, throw exception
-        if not kwargs and vars is not None and len(vars) < 13:
-            raise Exception()
+        if vars:
+            if len(vars) > 14:
+                raise Exception(f'Data over range: {len(vars)} items in array.')
+            if len(vars) < 13:
+                raise Exception(f'Data under range: {len(vars)} items in array.')
 
         if vars:
             self.details = {} 
@@ -133,9 +139,15 @@ class LineItemOS(LineItem):
         if isinstance(vars, tuple):
             vars = list(vars)
 
+        if not (kwargs or vars):
+            raise Exception('No data available')
+        
         #if vars is not none and doesn't match our expected data, throw exception
-        if not kwargs and vars is not None and len(vars) < 13:
-            raise Exception()
+        if vars:
+            if len(vars) > 7:
+                raise Exception(f'Data over range: {len(vars)} items in array.')
+            if len(vars) < 6:
+                raise Exception(f'Data under range: {len(vars)} items in array.')
 
         #ordernumber, orderdate, sku, upc, productdescription, sellingunitsize, uom, qty, thirdparty
 
