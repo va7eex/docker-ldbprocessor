@@ -32,4 +32,4 @@ VOLUME ["/var/import"]
 VOLUME ["/var/ldbinvoice"]
 
 #sleep initially so the rest of the containers can set themselves up.
-ENTRYPOINT sleep 60s && python3 -u /usr/share/sync-mail.py
+ENTRYPOINT sleep 6m && python3 -u /usr/share/sync-mail.py

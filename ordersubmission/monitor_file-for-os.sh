@@ -11,6 +11,8 @@
 FILEPATH=/var/ldbinvoice
 IMPORTPATH=/var/import
 
+sleep 6m
+
 inotifywait -m $IMPORTPATH -m $FILEPATH -e close_write -e moved_to |
     while read path action file; do
         echo "The file '$file' appeared in directory '$path' via '$action'"
