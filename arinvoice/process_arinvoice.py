@@ -49,7 +49,7 @@ class arinvoice:
         self.apikey = apikey
         self.apiurl = apiurl
         self.__s = requests.Session() 
-        self.pricechangeignore = float(pricechangeignore)
+        self.pricechangeignore = abs(float(pricechangeignore))
 
     def __apiquery(self, method='GET', url='', **kwargs):
         """
