@@ -29,6 +29,70 @@
                 background: rgb(66, 184, 221);
                 /* this is a light blue */
             }
+
+            /* https://www.w3schools.com/howto/howto_css_switch.asp */
+            /* The switch - the box around the slider */
+            .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            }
+
+            /* Hide default HTML checkbox */
+            .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            }
+
+            /* The slider */
+            .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            }
+
+            .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            }
+
+            input:checked + .slider {
+            background-color: #2196F3;
+            }
+
+            input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+            }
+
+            input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+            }
+
+            /* Rounded sliders */
+            .slider.round {
+            border-radius: 34px;
+            }
+
+            .slider.round:before {
+            border-radius: 50%;
+            }
         </style>
         <script>
             $(document).ready(function(){
@@ -39,6 +103,7 @@
                 });
                 $('#inventoryscan').submit(function(){
 
+                    var quantity = $('#inventoryscan-quantity').val()
                     $('#productupdate-inventory').val($('#inventoryscan-inventory').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
                         $("#statusreport-upc").val(response.upc);
@@ -50,7 +115,13 @@
                     setTimeout(function(){ $('#inventoryscan-submit').css('background-color', ''); }, 100);
 
                     $(this).trigger("reset");
+                    if($('#inventoryscan-numberlock').is(':checked')){
+                        $('#inventoryscan-quantity').val(quantity)
+                    }
                     return false;
+                });
+                $( "#inventoryscan-quantity" ).focus(function() {
+                    $("#inventoryscan-quantity").val('');
                 });
                 $('#productupdate').submit(function(){
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
@@ -101,6 +172,10 @@
                     <input type="text" id="inventoryscan-inventory" name="upc" placeholder="Barcode" required="" autofocus/>
                     <input type="number" id="inventoryscan-quantity" name="quantity" placeholder="1" value="1" min="1" max="999" required=""/>
                     <span class="pure-form-message-inline desktop-only">Scan one barcode per box, scan the largest barcode on the box.</span>
+                    <label class="switch">
+                        <input id="inventoryscan-numlock" type="checkbox">
+                        <span class="slider"></span>
+                      </label>
                 </div>
                 <div class="pure-control-group">
                     <label for="checkbox-radio-option-two" class="pure-radio desktop-only"> </label>
