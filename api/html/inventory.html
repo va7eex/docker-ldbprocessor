@@ -104,6 +104,7 @@
                 $('#inventoryscan').submit(function(){
 
                     var quantity = $('#inventoryscan-quantity').val()
+                    var numlock = $('#inventoryscan-numberlock').is(':checked')
                     $('#productupdate-inventory').val($('#inventoryscan-inventory').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
                         $("#statusreport-upc").val(response.upc);
@@ -115,7 +116,8 @@
                     setTimeout(function(){ $('#inventoryscan-submit').css('background-color', ''); }, 100);
 
                     $(this).trigger("reset");
-                    if($('#inventoryscan-numberlock').is(':checked')){
+                    if(numlock){
+                        $('#inventoryscan-numberlock').prop('checked', true);
                         $('#inventoryscan-quantity').val(quantity)
                     }
                     return false;
@@ -171,11 +173,11 @@
                     <label for="inventoryscan-inventory">Barcode</label>
                     <input type="text" id="inventoryscan-inventory" name="upc" placeholder="Barcode" required="" autofocus/>
                     <input type="number" id="inventoryscan-quantity" name="quantity" placeholder="1" value="1" min="1" max="999" required=""/>
-                    <span class="pure-form-message-inline desktop-only">Scan one barcode per box, scan the largest barcode on the box.</span>
                     <label class="switch">
-                        <input id="inventoryscan-numlock" type="checkbox">
+                        <input id="inventoryscan-numberlock" type="checkbox">
                         <span class="slider"></span>
-                      </label>
+                    </label>
+                    <span class="pure-form-message-inline desktop-only">Scan one barcode per box, scan the largest barcode on the box.</span>
                 </div>
                 <div class="pure-control-group">
                     <label for="checkbox-radio-option-two" class="pure-radio desktop-only"> </label>
