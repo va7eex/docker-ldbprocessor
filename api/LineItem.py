@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+
+__author__ = "David Rickett"
+__credits__ = ["David Rickett"]
+__license__ = "MIT"
+__version__ = "1.0.1"
+__maintainer__ = "David Rickett"
+__email__ = "dap.rickett@gmail.com"
+__status__ = "Production"
+
 import re
 #from schema import Schema, And, Use, Optional, SchemaError
 

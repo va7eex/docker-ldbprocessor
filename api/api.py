@@ -1,6 +1,14 @@
 
 #!/bin/python3
 
+__author__ = "David Rickett"
+__credits__ = ["David Rickett"]
+__license__ = "MIT"
+__version__ = "1.0.1"
+__maintainer__ = "David Rickett"
+__email__ = "dap.rickett@gmail.com"
+__status__ = "Production"
+
 import os
 import csv
 import string
@@ -691,7 +699,9 @@ def __misc_badbarcode():
 #
 
 def __itemsearch(upc):
-    query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={search} OR upc REGEXP {search}'
+    upc = escape(request.args.get('upc',''))
+    
+    query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={upc} OR upc REGEXP {upc}'
     print(query)
     g.cur.execute(query)
 

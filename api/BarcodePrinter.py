@@ -1,10 +1,20 @@
+#!/usr/bin/env python
+
+__author__ = "David Rickett"
+__credits__ = ["David Rickett"]
+__license__ = "MIT"
+__version__ = "1.0.1"
+__maintainer__ = "David Rickett"
+__email__ = "dap.rickett@gmail.com"
+__status__ = "Production"
+
 import re
 import sys
 from simple_zpl2 import ZPLDocument, Code128_Barcode, NetworkPrinter
 
 class LabelMaker:
 
-    INCH=25.4
+    INCH=25.4 #1 inch = 25.4mm
     
     #what these translate to in linear cm
     DPI203 = 203
@@ -14,8 +24,6 @@ class LabelMaker:
                 width: float = 1, height: float = 0.5, margins: float = (1/16),
                 columns: int = 2, fontsize: int = 30, description: str = '', location: str = ''):
         #note: we're defaulting to uline S-10765 dimensions
-        self.height = height
-        self.width = width
         self.margins = margins
         self.ipaddress = ipaddress
         self.port = port
@@ -25,9 +33,13 @@ class LabelMaker:
         self.fontsize=fontsize
         self.description = description
         self.location = location
+        self.height = height
+        self.width = width
 
+        #convert to inches for internal measurements, otherwise the rest gets iffy
         if self.metric:
-            raise TypeError('Use imperial for this')
+            self.height = height / self.INCH
+            self.width = width / self.INCH
 
     def getinfo(self):
         return {'description': self.description, 'location': self.location, 'size': f'{self.width}x{self.height}', 'width': self.width, 'height': self.height, 'columns': self.columns}
