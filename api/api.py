@@ -854,7 +854,7 @@ def page_invscan():
         return { 'success': False, 'reason': 'not registered'}, 401
 
     upc = escape(request.form.get('upc',0))
-    scangroup = escape(request.form.get('scangroup',0))
+    quantity = int(escape(request.form.get('quantity',1)))
     addremove = escape(request.form.get('addremove', 'add'))
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
 
@@ -863,12 +863,12 @@ def page_invscan():
     if 'remove' in addremove:
         if not redis_client.hexists(redishashkey,upc):
             return {'success': True, 'reason': 'nothing to do'}
-        if int(redis_client.hget(redishashkey,upc)) > 2:
-            redis_client.hincrby(redishashkey, upc,-1)
-        elif (redis_client.hget(redishashkey,upc)) <= 1:
+        if int(redis_client.hget(redishashkey,upc))-quantity >= 0:
+            redis_client.hincrby(redishashkey, upc,-quantity)
+        elif int(redis_client.hget(redishashkey,upc))-quantity < 0:
             redis_client.hset(redishashkey,upc,0)
     else:
-        redis_client.hincrby(redishashkey, upc,1)
+        redis_client.hincrby(redishashkey, upc,quantity)
         print(redishashkey, upc)
         redis_client.expire(redishashkey, (60*60*24)*3) #expire this in 3 days to keep DB size small.
 
