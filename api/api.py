@@ -832,18 +832,12 @@ if __name__ == "__main__":
 # Inventory
 #
 
-def __countBarcodes_inv():
-    barcodes = {}
-    tally = {}
-    total = 0
+def __countAllBarcodes_inv():
     for key in redis_client.scan_iter(match=f'inventory_*'):
-        key = str(key)
-        print(key)
-        barcodes[key] = redis_client.hgetall(key)
-        tally[key] = __sumRedisValues(redis_client.hvals(key))
-        total += tally[key]
-        print(total, tally[key])
-    return barcodes, tally, total
+        barcodes = redis_client.hgetall(key)
+        for barcode,quantity in barcodes.items():
+            redis_client.hincrby('master_inventory', barcode, quantity)
+    return redis_client.hgetall('master_inventory')
 
 @app.route('/inv/scan', methods=['POST'])
 @auto.doc(expected_type='application/json')
@@ -885,12 +879,16 @@ def page_invscan():
 def inv_exportlog():
 
     date = datetime.today().strftime('%Y%m%d')
+    scanner_terminal = escape(session["scanner_terminal"])
 
-    redishashkey = f'inventory_'
-    somedict = redis_client.hgetall(redishashkey)
+    if 'all' in request.form:
+        #get absolutely everything
+        somedict = __countAllBarcodes_inv()
+    else:
+        somedict = redis_client.hgetall(f'inventory_{scanner_terminal}')
     print(somedict)
 
-    with open(f'/var/ldbinvoice/{date}_inventory_scan_log.txt', 'w') as f:
+    with open(f'/var/ldbinvoice/{date}_{scanner_terminal}_inventory_scan_log.txt', 'w') as f:
         for k,v in somedict.items():
             line = f"{k},{v}"
             print(line)
