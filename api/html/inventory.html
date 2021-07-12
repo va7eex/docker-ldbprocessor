@@ -168,11 +168,11 @@
         <div>
         <form id='inventoryscan' class="pure-form pure-form-aligned" action="/inv/scan" method="post">
             <fieldset>
-                <legend id="inventoryscan-legend">Barcode Scanner</legend>
+                <legend id="inventoryscan-legend">Inventory Counting</legend>
                 <div class="pure-control-group">
                     <label for="inventoryscan-inventory">Barcode</label>
                     <input type="text" id="inventoryscan-inventory" name="upc" placeholder="Barcode" required="" autofocus/>
-                    <input type="number" id="inventoryscan-quantity" name="quantity" placeholder="1" value="1" min="1" max="999" required=""/>
+                    <input type="number" id="inventoryscan-quantity" name="quantity" placeholder="Qty" value="1" min="1" max="999"/>
                     <label class="switch">
                         <input id="inventoryscan-numberlock" type="checkbox">
                         <span class="slider"></span>

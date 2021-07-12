@@ -7,9 +7,9 @@
                     <label for="registerterminal-name">Barcode</label>
 
                     {% if scanner_terminal %}
-                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" required="" value={{ scanner_terminal }} autofocus/>
+                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" value={{ scanner_terminal }} autofocus/>
                     {% else %}
-                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" required="" autofocus/>
+                    <input type="text" id="registerterminal-name" name="scanner_terminal" placeholder="Terminal Name" autofocus/>
                     {% endif %}
                     <span class="pure-form-message-inline desktop-only">Backend name of this device.</span>
                 </div>
@@ -22,7 +22,14 @@
         <form class="pure-form pure-form-aligned" action="/bc" method="get">
             <fieldset>
                 <div class='pure-controls'>
-                        <button id='registerterminal-submit' type="submit" class="pure-button pure-button-primary">Get Scanning!</button>
+                        <button id='registerterminal-submit' type="submit" class="pure-button pure-button-primary">Shipment Receiving</button>
+                </div>
+            </fieldset>
+        </form>
+        <form class="pure-form pure-form-aligned" action="/inv" method="get">
+            <fieldset>
+                <div class='pure-controls'>
+                        <button id='registerterminal-submit' type="submit" class="pure-button pure-button-primary">Inventory Counting</button>
                 </div>
             </fieldset>
         </form>

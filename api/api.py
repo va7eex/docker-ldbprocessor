@@ -176,7 +176,7 @@ def page_bc_register():
 
     if request.method == 'POST':
         #register with random string if nothing else.
-        session['scanner_terminal'] = request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8))).lower()
+        session['scanner_terminal'] = escape(request.form.get('scanner_terminal',''.join(random.choices(string.ascii_uppercase + string.digits, k=8))).lower())
         if 'headless' in request.form:
             return {'success': True}
         return render_template('bcregister.html', scanner_terminal=escape(session["scanner_terminal"]))
@@ -886,7 +886,7 @@ def inv_exportlog():
 
     date = datetime.today().strftime('%Y%m%d')
 
-    redishashkey = f'inventory_{escape(session["scanner_terminal"])}'
+    redishashkey = f'inventory_'
     somedict = redis_client.hgetall(redishashkey)
     print(somedict)
 
