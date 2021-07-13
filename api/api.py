@@ -65,6 +65,13 @@ def __buildtables():
         oldlastupdated TIMESTAMP,
         PRIMARY KEY (sku))''')
 
+    cur.execute('''CREATE TABLE IF NOT EXISTS skubarcodelookup
+        (id INT NOT NULL AUTO_INCREMENT,
+        sku MEDIUMINT(8) ZEROFILL,
+        barcode BIGINT UNSIGNED,
+        timeadded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        PRIMARY KEY (id))''')
+
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
     #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
     cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
@@ -833,6 +840,7 @@ if __name__ == "__main__":
 #
 
 def __countAllBarcodes_inv():
+    redis_client.delete('master_inventory')
     for key in redis_client.scan_iter(match=f'inventory_*'):
         barcodes = redis_client.hgetall(key)
         for barcode,quantity in barcodes.items():
