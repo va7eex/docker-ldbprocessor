@@ -127,14 +127,16 @@
                 });
                 $('#productupdate').submit(function(){
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
+                        if (response.success) {
+                            $('#productupdate-barcode').css('background-color', 'rgb(28, 184, 65)');
+                            setTimeout(function(){ $('#productupdate-barcode').css('background-color', ''); }, 100);
+                        } else {
+                            $('#productupdate-barcode').css('background-color', 'rgb(202, 60, 60)');
+                            setTimeout(function(){ $('#productupdate-barcode').css('background-color', ''); }, 500);
+                        }
                     },'json');
 
-                    //visual feedback something happened.
-                    $('#scangroup-submit').css('background-color', 'rgb(28, 184, 65)');
-                    setTimeout(function(){ $('#scangroup-submit').css('background-color', ''); }, 100);
-
                     $(this).trigger("reset");
-                    $('#productupdate-barcode').css('background-color', '');
                     return false;
                 });
                 $('#exportlist').submit(function(){
@@ -189,7 +191,7 @@
                 </div>
             </fieldset>
         </form>
-        <form id='productupdate' class="pure-form pure-form-aligned" action="/bc/linksku", method="get">
+        <form id='productupdate' class="pure-form pure-form-aligned" action="/inv/linksku", method="post">
             <fieldset>
                 <legend>SKU Update</legend>
 

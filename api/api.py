@@ -57,7 +57,7 @@ def __buildtables():
     cur = connection.cursor()
 
     cur.execute('''CREATE TABLE IF NOT EXISTS iteminfolist
-        (sku MEDIUMINT(8) ZEROFILL,
+        (sku MEDIUMINT(8) UNSIGNED ZEROFILL,
         price FLOAT(11,4),
         oldprice FLOAT(11,4),
         badbarcode BOOLEAN NOT NULL DEFAULT 0,
@@ -67,7 +67,7 @@ def __buildtables():
 
     cur.execute('''CREATE TABLE IF NOT EXISTS skubarcodelookup
         (id INT NOT NULL AUTO_INCREMENT,
-        sku MEDIUMINT(8) ZEROFILL,
+        sku MEDIUMINT(8) UNSIGNED ZEROFILL,
         barcode BIGINT UNSIGNED,
         timeadded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         PRIMARY KEY (id))''')
@@ -76,7 +76,7 @@ def __buildtables():
     #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
     cur.execute('''CREATE TABLE IF NOT EXISTS invoicelog (
         id INT NOT NULL AUTO_INCREMENT,
-        sku MEDIUMINT(8) ZEROFILL,
+        sku MEDIUMINT(8) UNSIGNED ZEROFILL,
         productdescription VARCHAR(255),
         productcategory VARCHAR(255),
         size VARCHAR(20),
@@ -94,7 +94,7 @@ def __buildtables():
 
     cur.execute('''CREATE TABLE IF NOT EXISTS orderlog (
         id INT NOT NULL AUTO_INCREMENT,
-        sku MEDIUMINT(8) ZEROFILL,
+        sku MEDIUMINT(8) UNSIGNED ZEROFILL,
         upc BIGINT UNSIGNED,
         productdescription VARCHAR(255),
         sellingunitsize VARCHAR(32),
@@ -752,7 +752,7 @@ def setupLabelMakers():
     """Generates label makers."""
     #TODO: make better
     if os.getenv('LABEL_MAKER'):
-       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',location='Office'))
+       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',width=1.0, height=1.0,columns=1,location='Office'))
        labelmakers.append(LabelMaker(ipaddress='192.168.3.138',description='Test LP2824',width=2.0, height=1.0,columns=1, location='Storage'))
 
     # with open('printers.csv', newline='') as csvfile:
@@ -881,6 +881,20 @@ def page_invscan():
         payload = {'upc': upc, 'quantity': int(redis_client.hget(redishashkey,upc))}
 
     return {'success': True, **payload}
+
+@app.route('/inv/linksku', methods=['POST'])
+@app.auto.doc(expected_type='application/json')
+def inv_linksku():
+    barcode = escape(request.form.get('barcode',''))
+    sku = escape(request.form.get('sku',''))
+
+    if not barcode.isdigit() or not sku.isdigit():
+        return {'success': False, 'reason': 'barcode/sku not a number'}
+
+    query = f'INSERT INTO skubarcodelookup (sku, barcode) VALUES ( {sku}, {barcode} )'
+    g.cur.execute(query)
+    
+    return {'success': True}
 
 @app.route('/inv/exportscanlog', methods=['POST'])
 @auto.doc(expected_type='application/json')
