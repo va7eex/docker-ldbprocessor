@@ -96,10 +96,10 @@
         <form id='barcodescan' class="pure-form pure-form-aligned" action="/bc/scan" method="post">
             <fieldset>
                 <legend id="barcodescan-legend">Barcode Scanner</legend>
+                <span class="pure-form-message-inline desktop-only">Scan one barcode per item, scan the largest barcode on the item.</span>
                 <div class="pure-control-group">
                     <label for="barcodescan-barcode">Barcode</label>
                     <input type="text" id="barcodescan-barcode" name="upc" placeholder="Barcode" required="" autofocus/>
-                    <span class="pure-form-message-inline desktop-only">Scan one barcode per item, scan the largest barcode on the item.</span>
                 </div>
                 <div class="pure-control-group">
                     <label for="barcodescan-scangroup">Scan Group</label>
@@ -113,7 +113,7 @@
                 </div>
                 <div class='pure-controls'>
                         <button id='barcodescan-submit' type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
-                        <button type="submit" class="pure-button" name="noscan" formnovalidate>NO SCAN</button>
+                        <button type="submit" class="pure-button button-secondary" name="noscan" formnovalidate>NO SCAN</button>
                 </div>
             </fieldset>
         </form>

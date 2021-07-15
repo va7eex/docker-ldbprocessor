@@ -3,3 +3,5 @@
 /.vs
 api/test.sh
 api/test.py
+__pycache__
+.venv

@@ -34,4 +34,4 @@ COPY printers.csv ./
 
 COPY *.py ./
 
-ENTRYPOINT sleep 5m && uwsgi ./uwsgi.ini
+ENTRYPOINT uwsgi ./uwsgi.ini

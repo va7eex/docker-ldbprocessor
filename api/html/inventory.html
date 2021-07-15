@@ -2,9 +2,8 @@
 {% block content %}
        <style>
             .button-success,
-            .button-error,
-            .button-warning,
-            .button-secondary {
+            .button-activated,
+            .button-warning {
                 color: white;
                 border-radius: 4px;
                 text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
@@ -15,87 +14,21 @@
                 /* this is a green */
             }
     
-            .button-error {
+            .button-warning {
                 background: rgb(202, 60, 60);
                 /* this is a maroon */
             }
-    
-            .button-warning {
-                background: rgb(223, 117, 20);
-                /* this is an orange */
-            }
-    
-            .button-secondary {
+
+            .button-activated {
                 background: rgb(66, 184, 221);
-                /* this is a light blue */
             }
 
-            /* https://www.w3schools.com/howto/howto_css_switch.asp */
-            /* The switch - the box around the slider */
-            .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            }
-
-            /* Hide default HTML checkbox */
-            .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            }
-
-            /* The slider */
-            .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: .4s;
-            transition: .4s;
-            }
-
-            .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-            }
-
-            input:checked + .slider {
-            background-color: #2196F3;
-            }
-
-            input:focus + .slider {
-            box-shadow: 0 0 1px #2196F3;
-            }
-
-            input:checked + .slider:before {
-            -webkit-transform: translateX(26px);
-            -ms-transform: translateX(26px);
-            transform: translateX(26px);
-            }
-
-            /* Rounded sliders */
-            .slider.round {
-            border-radius: 34px;
-            }
-
-            .slider.round:before {
-            border-radius: 50%;
-            }
         </style>
         <script>
             $(document).ready(function(){
+                $("#inventoryscan-numberlockbutton").click(function(){
+                    $(this).toggleClass( "button-activated" );
+                });
                 $.get('/bc/getstatus', $(this).serialize(), function(response){
                     $("#statusreport-upc").val('');
                     $("#statusreport-quantity").val('');
@@ -103,8 +36,8 @@
                 });
                 $('#inventoryscan').submit(function(){
 
-                    var quantity = $('#inventoryscan-quantity').val()
-                    var numlock = $('#inventoryscan-numberlock').is(':checked')
+                    var quantity = $('#inventoryscan-quantity').val();
+                    var numlock = $('#inventoryscan-numberlockbutton').hasClass("button-activated");
                     $('#productupdate-inventory').val($('#inventoryscan-inventory').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
                         $("#statusreport-upc").val(response.upc);
@@ -112,12 +45,12 @@
                     },'json');
 
                     //visual feedback something happened.
-                    $('#inventoryscan-submit').css('background-color', 'rgb(28, 184, 65)');
-                    setTimeout(function(){ $('#inventoryscan-submit').css('background-color', ''); }, 100);
+                    $('#inventoryscan-inventory').css('background-color', 'rgb(28, 184, 65)');
+                    setTimeout(function(){ $('#inventoryscan-inventory').css('background-color', ''); }, 100);
 
                     $(this).trigger("reset");
                     if(numlock){
-                        $('#inventoryscan-numberlock').prop('checked', true);
+                        $('#inventoryscan-numberlockbutton').addClass('button-activated');
                         $('#inventoryscan-quantity').val(quantity)
                     }
                     return false;
@@ -127,7 +60,8 @@
                 });
                 $('#productupdate').submit(function(){
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
-                        if (response.success) {
+                        console.log(response)
+                        if (response.success == true) {
                             $('#productupdate-barcode').css('background-color', 'rgb(28, 184, 65)');
                             setTimeout(function(){ $('#productupdate-barcode').css('background-color', ''); }, 100);
                         } else {
@@ -171,15 +105,15 @@
         <form id='inventoryscan' class="pure-form pure-form-aligned" action="/inv/scan" method="post">
             <fieldset>
                 <legend id="inventoryscan-legend">Inventory Counting</legend>
+                <span class="pure-form-message-inline desktop-only">Scan one barcode per item, scan the largest barcode on the item.</span>
                 <div class="pure-control-group">
                     <label for="inventoryscan-inventory">Barcode</label>
                     <input type="text" id="inventoryscan-inventory" name="upc" placeholder="Barcode" required="" autofocus/>
+                </div>
+                <div class="pure-control-group">
+                    <label for="inventoryscan-quantity">Quantity</label>
                     <input type="number" id="inventoryscan-quantity" name="quantity" placeholder="Qty" value="1" min="1" max="999"/>
-                    <label class="switch">
-                        <input id="inventoryscan-numberlock" type="checkbox">
-                        <span class="slider"></span>
-                    </label>
-                    <span class="pure-form-message-inline desktop-only">Scan one barcode per box, scan the largest barcode on the box.</span>
+                    <button type="button" id="inventoryscan-numberlockbutton" class="pure-button">Lock Quantity</button>
                 </div>
                 <div class="pure-control-group">
                     <label for="checkbox-radio-option-two" class="pure-radio desktop-only"> </label>
@@ -197,7 +131,7 @@
 
                 <div class="pure-control-group">
                     <label for='productupdate-barcode'>Barcode</label>
-                    <input type="text" id='productupdate-barcode' name='barcode' placeholder="Barcode" required=""/>
+                    <input type="text" id='productupdate-barcode' name='upc' placeholder="barcode" required=""/>
                     <span class="pure-form-message-inline desktop-only">placeholder</span>
                 </div>
                 <div class='pure-control-group'>
@@ -223,23 +157,21 @@
                 <span class="pure-form-message-inline desktop-only">Total number of products scanned.</span>
             </div>
         </form>
+        <legend >Actions</legend>
         <form id='exportlist' class="pure-form pure-form-aligned" action="/inv/exportscanlog", method="post">
-            <fieldset>
-                <legend id="statusreport-legend">Actions</legend>
-                <div class="pure-controls">
-                <button type="submit" class="pure-button button-success" background="0xca3c3c">Export List</button>
-                <span class="pure-form-message-inline desktop-only">Export scan log to file.</span>
-                <input hidden name="all" value="all">
-                </div>
-            </fieldset>
+            <div class="pure-controls">
+            <button type="submit" class="pure-button button-success" background="0xca3c3c">Export List</button>
+            <span class="pure-form-message-inline desktop-only">Export scan log to file.</span>
+            </div>
         </form>
         <form id='dellist' class="pure-form pure-form-aligned" action="/inv/clearall", method="post">
-            <fieldset>
-                <div class="pure-controls">
-                <button type="submit" class="pure-button button-error" background="0xca3c3c">Delete List</button>
-                <span class="pure-form-message-inline desktop-only">Delete full list. USE WITH CAUTION.</span>
-                </div>
-            </fieldset>
+            <div class="pure-controls">
+            <button type="submit" class="pure-button button-warning" background="0xca3c3c">Delete List</button>
+            <span class="pure-form-message-inline desktop-only">Delete full list. USE WITH CAUTION.</span>
+            </div>
         </form>
+    </div>
+    <div>
+
     </div>
 {% endblock %}

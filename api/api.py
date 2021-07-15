@@ -66,11 +66,11 @@ def __buildtables():
         PRIMARY KEY (sku))''')
 
     cur.execute('''CREATE TABLE IF NOT EXISTS skubarcodelookup
-        (id INT NOT NULL AUTO_INCREMENT,
+        (upc BIGINT UNSIGNED,
         sku MEDIUMINT(8) UNSIGNED ZEROFILL,
-        barcode BIGINT UNSIGNED,
-        timeadded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        PRIMARY KEY (id))''')
+        timeadded TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        timemodified TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (upc))''')
 
     #['SKU', 'Product Description', 'Product Category', 'Size', 'Qty', 'UOM', 'Price per UOM', 'Extended Price',
     #'SU Quantity', 'SU Price', 'WPP Savings', 'Cont. Deposit', 'Original Order#']
@@ -827,7 +827,7 @@ def __label_print():
     if quantity: quantity = f'{abs(int(quantity))}'
 
     print(name, sku, quantity)
-    labelmakers[int(printer)].printlabel(name,sku,int(quantity))
+    labelmakers[int(printer)].printReplacementLabel(name,sku,int(quantity))
 
     return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }
 
@@ -883,18 +883,18 @@ def page_invscan():
     return {'success': True, **payload}
 
 @app.route('/inv/linksku', methods=['POST'])
-@app.auto.doc(expected_type='application/json')
+@auto.doc(expected_type='application/json')
 def inv_linksku():
-    barcode = escape(request.form.get('barcode',''))
+    upc = escape(request.form.get('upc',''))
     sku = escape(request.form.get('sku',''))
 
-    if not barcode.isdigit() or not sku.isdigit():
+    if not upc.isdigit() or not sku.isdigit():
         return {'success': False, 'reason': 'barcode/sku not a number'}
 
-    query = f'INSERT INTO skubarcodelookup (sku, barcode) VALUES ( {sku}, {barcode} )'
+    query = f'INSERT INTO skubarcodelookup (upc, sku) VALUES ( {upc}, {sku} ) ON DUPLICATE KEY UPDATE sku={sku}'
     g.cur.execute(query)
     
-    return {'success': True}
+    return {'success': True, 'reason': f'{upc} linked to {sku}', 'upc': upc, 'sku': sku}
 
 @app.route('/inv/exportscanlog', methods=['POST'])
 @auto.doc(expected_type='application/json')
@@ -902,8 +902,9 @@ def inv_exportlog():
 
     date = datetime.today().strftime('%Y%m%d')
     scanner_terminal = escape(session["scanner_terminal"])
+    allscanners = escape(request.form.get('allscanners','yes'))
 
-    if 'all' in request.form:
+    if 'yes' in allscanners.lower():
         #get absolutely everything
         somedict = __countAllBarcodes_inv()
     else:
@@ -922,8 +923,14 @@ def inv_exportlog():
 @auto.doc(expected_type='application/json')
 def inv_clearall():
 
+    allscanners = escape(request.form.get('allscanners','yes'))
+
     redishashkey = f'inventory_{escape(session["scanner_terminal"])}'
 
-    redis_client.delete(redishashkey)
-
+    if 'yes' in allscanners.lower():
+        for key in redis_client.scan_iter(match=f'inventory_*'):
+            redis_client.delete(key)
+    else:
+        redis_client.delete(redishashkey)
+    
     return {'success': True}

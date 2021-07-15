@@ -10,8 +10,6 @@
 
 FILEPATH=/var/ldbinvoice
 
-sleep 6m
-
 inotifywait -m $FILEPATH -e close_write -e moved_to |
     while read path action file; do
         echo "The file '$file' appeared in directory '$path' via '$action'"
