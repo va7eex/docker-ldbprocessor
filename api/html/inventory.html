@@ -10,6 +10,8 @@
                         $(this).text('REM');
                         $(this).removeClass('button-green');
                         $(this).addClass('button-red');
+                        $("#inventoryscan-quantity").val(1);
+                        $('#inventoryscan-numberlockbutton').removeClass("button-secondary");
                     } else {
                         $("#inventoryscan-addremovefield").val('add');
                         // $(this).val('add');
