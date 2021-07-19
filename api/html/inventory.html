@@ -1,43 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-       <style>
-            .button-success,
-            .button-activated,
-            .button-warning {
-                color: white;
-                border-radius: 4px;
-                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-            }
-    
-            .button-success {
-                background: rgb(28, 184, 65);
-                /* this is a green */
-            }
-    
-            .button-warning {
-                background: rgb(202, 60, 60);
-                /* this is a maroon */
-            }
 
-            .button-activated {
-                background: rgb(66, 184, 221);
-            }
-
-        </style>
         <script>
             $(document).ready(function(){
                 $("#inventoryscan-numberlockbutton").click(function(){
-                    $(this).toggleClass( "button-activated" );
+                    $(this).toggleClass( "button-secondary" );
                 });
                 $.get('/bc/getstatus', $(this).serialize(), function(response){
                     $("#statusreport-upc").val('');
                     $("#statusreport-quantity").val('');
-                    return false
+                    return false;
                 });
                 $('#inventoryscan').submit(function(){
 
                     var quantity = $('#inventoryscan-quantity').val();
-                    var numlock = $('#inventoryscan-numberlockbutton').hasClass("button-activated");
+                    var numlock = $('#inventoryscan-numberlockbutton').hasClass("button-secondary");
                     $('#productupdate-inventory').val($('#inventoryscan-inventory').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
                         $("#statusreport-upc").val(response.upc);
@@ -50,13 +27,18 @@
 
                     $(this).trigger("reset");
                     if(numlock){
-                        $('#inventoryscan-numberlockbutton').addClass('button-activated');
+                        $('#inventoryscan-numberlockbutton').addClass('button-secondary');
                         $('#inventoryscan-quantity').val(quantity)
                     }
                     return false;
                 });
                 $( "#inventoryscan-quantity" ).focus(function() {
                     $("#inventoryscan-quantity").val('');
+                });
+                $( "#inventoryscan-quantity" ).focusout(function() {
+                    if( $(this).val() == "" ) {
+                        $(this).val(1);
+                    }
                 });
                 $('#productupdate').submit(function(){
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
@@ -160,13 +142,13 @@
         <legend >Actions</legend>
         <form id='exportlist' class="pure-form pure-form-aligned" action="/inv/exportscanlog", method="post">
             <div class="pure-controls">
-            <button type="submit" class="pure-button button-success" background="0xca3c3c">Export List</button>
+            <button type="submit" class="pure-button button-green" background="0xca3c3c">Export List</button>
             <span class="pure-form-message-inline desktop-only">Export scan log to file.</span>
             </div>
         </form>
         <form id='dellist' class="pure-form pure-form-aligned" action="/inv/clearall", method="post">
             <div class="pure-controls">
-            <button type="submit" class="pure-button button-warning" background="0xca3c3c">Delete List</button>
+            <button type="submit" class="pure-button button-red" background="0xca3c3c">Delete List</button>
             <span class="pure-form-message-inline desktop-only">Delete full list. USE WITH CAUTION.</span>
             </div>
         </form>

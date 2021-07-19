@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
-       <style>
-            .button-success,
-            .button-error,
-            .button-warning,
-            .button-secondary {
-                color: white;
-                border-radius: 4px;
-                text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-            }
-    
-            .button-success {
-                background: rgb(28, 184, 65);
-                /* this is a green */
-            }
-    
-            .button-error {
-                background: rgb(202, 60, 60);
-                /* this is a maroon */
-            }
-    
-            .button-warning {
-                background: rgb(223, 117, 20);
-                /* this is an orange */
-            }
-    
-            .button-secondary {
-                background: rgb(66, 184, 221);
-                /* this is a light blue */
-            }
-        </style>
+
         <script>
             $(document).ready(function(){
+
+                var barcodescangroup = 0;
+                $("#barcodescan-scangroup").focus(function() {
+                    barcodescangroup = $(this).val()
+                    $(this).val("");
+                });
+                $("#barcodescan-scangroup").focusout(function() {
+                    if( $(this).val() == "" ) {
+                        $(this).val(barcodescangroup);
+                    }
+                    $("#barcodescan-barcode").focus();
+                });
+
+                $("#barcodescan-addremove").click(function(){
+                    if ($(this).text() == "ADD") {
+                        $("#barcodescan-addremovefield").val('remove');
+                        // $(this).val('remove');
+                        $(this).text('REM');
+                        $(this).removeClass('button-green');
+                        $(this).addClass('button-red');
+                    } else {
+                        $("#barcodescan-addremovefield").val('add');
+                        // $(this).val('add');
+                        $(this).text('ADD');
+                        $(this).removeClass('button-red');
+                        $(this).addClass('button-green');
+                    }
+                    $("#barcodescan-barcode").focus();
+                });
                 $('#barcodescan').submit(function(){
 
                     var scangroup = $('#barcodescan-scangroup').val();
@@ -47,6 +47,10 @@
 
                     $(this).trigger("reset");
                     $('#barcodescan-scangroup').val(scangroup);
+                    $("#barcodescan-addremovefield").val('add');
+                    $("#barcodescan-addremove").text('ADD');
+                    $("#barcodescan-addremove").removeClass('button-red');
+                    $("#barcodescan-addremove").addClass('button-green');
                     return false;
                 });
                 $('#statusreport').submit(function(){
@@ -100,20 +104,22 @@
                 <div class="pure-control-group">
                     <label for="barcodescan-barcode">Barcode</label>
                     <input type="text" id="barcodescan-barcode" name="upc" placeholder="Barcode" required="" autofocus/>
+                    <input type="text" id="barcodescan-addremovefield" hidden name="addremove" value="add"/>
+                    <button id="barcodescan-addremove" type="button" class="pure-button button-green">ADD</button>
                 </div>
                 <div class="pure-control-group">
                     <label for="barcodescan-scangroup">Scan Group</label>
                     <input type="number" id="barcodescan-scangroup" name="scangroup" placeholder="0" value="0" min="0" max="255" required=""/>
                     <span class="pure-form-message-inline desktop-only">Used to differentiate between groups of objects</span>
                 </div>
-                <div class="pure-control-group">
+                <!-- <div class="pure-control-group">
                     <label for="checkbox-radio-option-two" class="pure-radio desktop-only"> </label>
-                        <input type="radio" id="checkbox-radio-option-two" name="addremove" value="add" checked="" /> Add</label>
-                        <input type="radio" id="checkbox-radio-option-three" name="addremove" value="remove" /> Remove</label>
-                </div>
+                    <input type="radio" id="checkbox-radio-option-two" name="addremove" value="add" checked="" /> Add</label>
+                    <input type="radio" id="checkbox-radio-option-three" name="addremove" value="remove" /> Remove</label>
+                </div> -->
                 <div class='pure-controls'>
-                        <button id='barcodescan-submit' type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
-                        <button type="submit" class="pure-button button-secondary" name="noscan" formnovalidate>NO SCAN</button>
+                    <button id='barcodescan-submit' type="submit" class="pure-button pure-button-primary" name=submit>Submit</button>
+                    <button type="submit" class="pure-button button-secondary" name="noscan" formnovalidate>NO SCAN</button>
                 </div>
             </fieldset>
         </form>
@@ -157,7 +163,7 @@
             <fieldset>
                 <legend id="statusreport-legend">Actions</legend>
                 <div class="pure-controls">
-                <button type="submit" class="pure-button button-success" background="0xca3c3c">Export List</button>
+                <button type="submit" class="pure-button button-green" background="0xca3c3c">Export List</button>
                 <span class="pure-form-message-inline desktop-only">Export scan log to file.</span>
                 </div>
             </fieldset>
@@ -165,7 +171,7 @@
         <form id='dellist' class="pure-form pure-form-aligned" action="/bc/deleteall", method="post">
             <fieldset>
                 <div class="pure-controls">
-                <button type="submit" class="pure-button button-error" background="0xca3c3c">Delete List</button>
+                <button type="submit" class="pure-button button-red" background="0xca3c3c">Delete List</button>
                 </div>
             </fieldset>
         </form>

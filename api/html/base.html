@@ -12,12 +12,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js"></script>
 </head>
 <body>
-<style scoped="">
+    <style scoped="">
         @media screen and (max-width: 600px) {
             .desktop-only {
                 visibility: hidden;
                 display: none;
             }
+        }
+        .button-green,
+        .button-orange,
+        .button-red,
+        .button-secondary {
+            color: white;
+            border-radius: 4px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-green {
+            background: rgb(28, 184, 65);
+            /* this is a green */
+        }
+
+        .button-red {
+            background: rgb(202, 60, 60);
+            /* this is a maroon */
+        }
+
+        .button-orange {
+            background: rgb(223, 117, 20);
+            /* this is an orange */
+        }
+
+        .button-secondary {
+            background: rgb(66, 184, 221);
+            /* this is a light blue */
         }
     </style>
 <div id="layout">
@@ -38,7 +66,7 @@
                 </li>
 
                 <li class="pure-menu-item menu-item-divided">
-                    <a href="/bc" class="pure-menu-link">Scanner</a>
+                    <a href="/bc" class="pure-menu-link">Receiving Scanner</a>
                     <a href="/lp" class="pure-menu-link">Printer</a>
                     <a href="/misc/itemmod" class="pure-menu-link">Modify Item</a>
                 </li>
