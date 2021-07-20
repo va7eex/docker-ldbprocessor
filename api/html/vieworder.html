@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% block header %}
+{% endblock %}
+{% block footer %}
+    {% include 'footer.html' %}
+{% endblock %}
 {% block content %}
     <form id='osr-view-order' class="pure-form pure-form-aligned" action="/osr/getorder" method="get">
     <fieldset>

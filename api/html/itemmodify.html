@@ -1,4 +1,9 @@
 {% extends "base.html" %}
+{% block header %}
+{% endblock %}
+{% block footer %}
+    {% include 'footer.html' %}
+{% endblock %}
 {% block content %}
         <div>
         <form id='itemmodify' class="pure-form pure-form-aligned" action="/misc/itemmod" method="get">
