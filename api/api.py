@@ -523,10 +523,12 @@ def __ar_pricechange():
         returnrows[row] = rows.pop(0)
         if 'sku' in returnrows[row]:
             query = f'SELECT upc FROM orderlog WHERE sku={returnrows[row]["sku"]}'
+            print(query)
             g.cur.execute(query)
             result = g.cur.fetchone()
             print(result)
-            returnrows[row]['upc'] = Barcode.CalculateUPC(result['upc'])
+            if 'upc' in result:
+                returnrows[row]['upc'] = Barcode.CalculateUPC(result['upc'])
     return returnrows
 
 

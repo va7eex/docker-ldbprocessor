@@ -107,7 +107,10 @@ class arinvoice:
 
                 fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
-                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC*: {kwargs['upc']}\n")
+                if 'upc' in kwargs:
+                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC*: {kwargs['upc']}\n")
+                else:
+                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
             
             return 0
 
