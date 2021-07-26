@@ -189,6 +189,11 @@ class Barcode:
 
     def CalculateUPC(itf14: str):
         """Calculate GTIN-12 aka UPC code based on GTIN-14"""
+        if type(itf14) is not str:
+            itf14 = f'{itf14}'
+        if not itf14.isdigit():
+            return 0
+            
         gtin12 = f'{itf14[-12:-1]}{Barcode.__mod10(itf14[-12:-1])}'
 
         return gtin12
