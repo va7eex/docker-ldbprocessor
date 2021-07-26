@@ -524,7 +524,9 @@ def __ar_pricechange():
         if 'sku' in returnrows[row]:
             query = f'SELECT upc FROM orderlog WHERE sku={returnrows[row]["sku"]}'
             g.cur.execute(query)
-            returnrows[row]['upc'] = Barcode.CalculateUPC(g.cur.fetchone()['upc'])
+            result = g.cur.fetchone()
+            print(result)
+            returnrows[row]['upc'] = Barcode.CalculateUPC(result['upc'])
     return returnrows
 
 
@@ -761,7 +763,7 @@ def setupLabelMakers():
     """Generates label makers."""
     #TODO: make better
     if os.getenv('LABEL_MAKER'):
-       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',width=1.0, height=1.0,columns=1,location='Office'))
+       labelmakers.append(LabelMaker(ipaddress=os.getenv('LABEL_MAKER'),description='ZT410',width=1.0, height=1.0,columns=2,location='Office'))
        labelmakers.append(LabelMaker(ipaddress='192.168.3.138',description='Test LP2824',width=2.0, height=1.0,columns=1, location='Storage'))
 
     # with open('printers.csv', newline='') as csvfile:
