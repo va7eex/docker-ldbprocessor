@@ -217,7 +217,7 @@ class BarcodeProcessor:
 
                 else:
                     # increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
-                    self.__apiquery('POST', '/bc/scan', **self.__urlpayload(line[3], datescanned))
+                    self.__apiquery('POST', '/bc/scan', **self.__urlpayload(f'cs,{line[2]}{line[3]}', datescanned))
                     #generate stats, I love stats.
                     # if not 'DOESNOTSCAN' in line[3]:
                     #     self.__r.hincrby(f'{latestdate}_scanstats', 'length: %s'%len(line[3]),1)

@@ -20,6 +20,7 @@ from flask import Flask
 from flask import request, current_app, g
 from flask import render_template
 from flask import session, redirect, url_for
+from flask import jsonify
 from flaskext.mysql import MySQL
 from pymysql.cursors import DictCursor
 from flask_redis import FlaskRedis
@@ -31,6 +32,7 @@ from schema import Schema, And, Use, Optional, SchemaError
 from markupsafe import escape
 
 from BarcodePrinter import LabelMaker
+from Barcode import Barcode
 from LineItem import LineItemOS
 from LineItem import LineItemAR
 
@@ -259,10 +261,13 @@ def page_bcscan():
     if not 'scanner_terminal' in session:
         return { 'success': False, 'reason': 'not registered'}, 401
 
-    upc       = escape(request.form.get('upc',0))
-    scangroup = escape(request.form.get('scangroup',0))
-    addremove = escape(request.form.get('addremove', 'add'))
-    datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+    upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
+    scangroup       = escape(request.form.get('scangroup',0))
+    addremove       = escape(request.form.get('addremove', 'add'))
+    datestamp       = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
+
+    #TODO: https://supportcommunity.zebra.com/s/article/Determine-Barcode-Symbology-by-using-Symbol-or-AIM-Code-Identifiers?language=en_US
+    # implement this
 
     print (request.form)
 
@@ -286,7 +291,7 @@ def page_bcscan():
     if not 'machine' in request.form:
         payload['barcodes'], payload['tally'], payload['total'] = __countBarcodes(datestamp)
 
-    return {'success': True, **payload}
+    return {'success': True, 'upc': upc, **payload}
 
 @app.route('/bc/getstatus', methods=['GET'])
 @auto.doc(expected_type='application/json')
@@ -298,7 +303,7 @@ def __bc_getstatus():
     payload = {}
     payload['barcodes'], payload['_tally'], payload['__total'] = __countBarcodes(datestamp)
 
-    return payload
+    return jsonify(**payload)
 
 def __bc_deleteRedisDB( scandate):
         print( f'Deleting databases for {scandate}:' )
@@ -516,6 +521,10 @@ def __ar_pricechange():
     returnrows = {}
     for row in range(len(rows)):
         returnrows[row] = rows.pop(0)
+        if 'sku' in returnrows[row]:
+            query = f'SELECT upc FROM orderlog WHERE sku={returnrows[row]["sku"]}'
+            g.cur.execute(query)
+            returnrows[row]['upc'] = Barcode.CalculateUPC(g.cur.fetchone()['upc'])
     return returnrows
 
 
@@ -706,7 +715,7 @@ def __misc_badbarcode():
 #
 
 def __itemsearch(upc):
-    upc = escape(request.args.get('upc',''))
+    upc, upctype = Barcode.BarcodeType(escape(request.args.get('upc','')))
     
     query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={upc} OR upc REGEXP {upc}'
     print(query)
@@ -724,7 +733,7 @@ def itemsearch():
     
     :param str upc: Can be either SKU or UPC.
     """
-    upc = escape(request.args.get('upc',''))
+    upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
 
     if not upc.isdigit():
         return {'success': False}, 406
@@ -742,7 +751,7 @@ def itemsearch():
 @app.route('/barcodeinput', methods=['POST'])
 @auto.doc(expected_type='application/json')
 def barcodeinput():
-    input = escape(request.args.get('bc'))
+    upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
 
 #
 # Label Makers
@@ -855,7 +864,7 @@ def page_invscan():
     if not 'scanner_terminal' in session:
         return { 'success': False, 'reason': 'not registered'}, 401
 
-    upc = escape(request.form.get('upc',0))
+    upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
     quantity = int(escape(request.form.get('quantity',1)))
     addremove = escape(request.form.get('addremove', 'add'))
     datestamp = escape(request.form.get('datestamp',datetime.today().strftime('%Y%m%d')))
@@ -885,7 +894,7 @@ def page_invscan():
 @app.route('/inv/linksku', methods=['POST'])
 @auto.doc(expected_type='application/json')
 def inv_linksku():
-    upc = escape(request.form.get('upc',''))
+    upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
     sku = escape(request.form.get('sku',''))
 
     if not upc.isdigit() or not sku.isdigit():

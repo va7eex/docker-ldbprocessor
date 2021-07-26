@@ -40,10 +40,10 @@
                 $('#barcodescan').submit(function(){
 
                     var scangroup = $('#barcodescan-scangroup').val();
-                    $('#productupdate-barcode').val($('#barcodescan-barcode').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
                         $("#statusreport-tally").val(response.tally);
                         $("#statusreport-total").val(response.total);
+                        $('#productupdate-barcode').val(response.upc);
                     },'json');
 
                     //visual feedback something happened.
@@ -156,13 +156,14 @@
             </div>
             <div class="pure-control-group">
                 <label for="statusreport-total">Total</label>
-                <input type="text" id="statusreport-total" name="quantity" placeholder="Total" readonly=''/>
+                <input type="number" id="statusreport-total" name="quantity" placeholder="Total" readonly=''/>
                 <span class="pure-form-message-inline desktop-only">Total number of products scanned.</span>
             </div>
             <div class="pure-controls">
                 <button type="submit" class="pure-button" background="0xca3c3c">Update</button>
                 <span class="pure-form-message-inline desktop-only">Force update status report.</span>
-                </div>
+                <button type="submit" class="pure-button">View Report</button>
+            </div>
         </form>
         <form id='exportlist' class="pure-form pure-form-aligned" action="/bc/exportscanlog", method="post">
             <fieldset>

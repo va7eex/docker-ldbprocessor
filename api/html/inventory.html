@@ -38,8 +38,8 @@
 
                     var quantity = $('#inventoryscan-quantity').val();
                     var numlock = $('#inventoryscan-numberlockbutton').hasClass("button-secondary");
-                    $('#productupdate-barcode').val($('#inventoryscan-barcode').val())
                     $.post($(this).attr('action'), $(this).serialize(), function(response){
+                        $('#productupdate-barcode').val(response.upc);
                         $("#statusreport-upc").val(response.upc);
                         $("#statusreport-quantity").val(response.quantity);
                     },'json');

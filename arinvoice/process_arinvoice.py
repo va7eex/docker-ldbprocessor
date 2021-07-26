@@ -107,7 +107,7 @@ class arinvoice:
 
                 fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
-                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
+                fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC*: {kwargs['upc']}\n")
             
             return 0
 
@@ -128,9 +128,11 @@ class arinvoice:
             suppressedchanges += self.__addtopricechangereport( invoicedate, **row )
 
         #if one or more price changes were below threshold, report that.
-        if suppressedchanges > 0:
-            with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
-                fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.")
+        with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
+            if suppressedchanges > 0:
+                fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
+            fp.write('\n\nDisclaimer:\n')
+            fp.write('* UPC is calculated based on automated reports and may not be accurate.')
             
 
     def __dopricechangelist(self, invoicedate):
