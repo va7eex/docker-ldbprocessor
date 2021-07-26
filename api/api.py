@@ -527,7 +527,7 @@ def __ar_pricechange():
             g.cur.execute(query)
             result = g.cur.fetchone()
             print(result)
-            if 'upc' in result:
+            if result is not None and 'upc' in result:
                 returnrows[row]['upc'] = Barcode.CalculateUPC(result['upc'])
     return returnrows
 
