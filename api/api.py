@@ -522,13 +522,17 @@ def __ar_pricechange():
     for row in range(len(rows)):
         returnrows[row] = rows.pop(0)
         if 'sku' in returnrows[row]:
-            query = f'SELECT upc FROM orderlog WHERE sku={returnrows[row]["sku"]}'
-            print(query)
+            query = f'SELECT id, upc FROM orderlog WHERE sku={returnrows[row]["sku"]} ORDER BY id DESC'
             g.cur.execute(query)
             result = g.cur.fetchone()
-            print(result)
             if result is not None and 'upc' in result:
-                returnrows[row]['upc'] = Barcode.CalculateUPC(result['upc'])
+                upc = Barcode.CalculateUPC(result['upc'])
+                ean = Barcode.CalculateEAN(result['upc'])
+                if int(upc) != int(ean):
+                    returnrows[row]['gtin12'] = upc
+                    returnrows[row]['gtin13'] = ean
+                else:
+                    returnrows[row]['gtin12'] = upc
     return returnrows
 
 

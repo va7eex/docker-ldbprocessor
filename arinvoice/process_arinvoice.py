@@ -107,8 +107,12 @@ class arinvoice:
 
                 fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
-                if 'upc' in kwargs:
-                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC*: {kwargs['upc']}\n")
+                if 'gtin12' in kwargs and 'gtin13' in kwargs:
+                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**: {kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
+                elif 'gtin12' in kwargs:
+                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: {kwargs['gtin12']}\n")
+                elif 'gtin13' in kwargs:
+                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*: {kwargs['gtin13']}\n")
                 else:
                     fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
             
@@ -135,7 +139,9 @@ class arinvoice:
             if suppressedchanges > 0:
                 fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
             fp.write('\n\nDisclaimer:\n')
-            fp.write('* UPC is calculated based on automated reports and may not be accurate.')
+            fp.write('\t* Product barcode is calculated based on automated reports and may not be accurate.')
+            fp.write('\t** If UPC is presented as A+BBB/C format, UPC-A can be extracted by taking BBB.\n')
+            fp.write('\t   EAN-13 can be extracted by adding A to BBB and replacing the last B with C.\n')
             
 
     def __dopricechangelist(self, invoicedate):

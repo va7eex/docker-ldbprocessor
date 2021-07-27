@@ -144,9 +144,24 @@ class Barcode:
 
         return barcode, None
 
+    def __oddeven(barcode):
+        """Split each digit into even and odd groups from the RIGHTMOST POSITION"""
+        odd = []
+        even = []
+        barcode = barcode[::-1] # even and odd numbers are based from the rightmost position.
+        for c in range(len(barcode)):
+            #even/odd is reversed because we start at position 0, not position 1
+            if c%2 == 1:
+                even.append(int(barcode[c]))
+            else:
+                odd.append(int(barcode[c]))
+
+        return odd, even
+
     def __mod10(barcode):
         """
         Mod 10:
+        FROM RIGHT TO LEFT
         1. Add up all the odd numbers in the code, multiply the sum by 3.
         2. Add up all even numbers.
         3. 10-((even sum)+(odd sum) % 10) = check digit
@@ -158,18 +173,6 @@ class Barcode:
         mod10 = (10-((sum(even)+sum(odd)*3)%10)) %10
         print(f'Mod10: {mod10}')
         return mod10
-
-    def __oddeven(barcode):
-        odd = []
-        even = []
-        for c in range(len(barcode)):
-            #this is reversed because we start at position 0, not position 1
-            if c%2 == 1:
-                even.append(int(barcode[c]))
-            else:
-                odd.append(int(barcode[c]))
-
-        return odd, even
 
     def GTIN14(barcode: str):
         """Determine whether a GTIN-14 is a valid code."""
@@ -198,7 +201,19 @@ class Barcode:
 
         return gtin12
 
+    def CalculateEAN(itf14: str):
+        """Calculate GTIN-13 aka EAN code based on GTIN-14"""
+        if type(itf14) is not str:
+            itf14 = f'{itf14}'
+        if not itf14.isdigit():
+            return 0
+            
+        gtin13 = f'{itf14[-13:-1]}{Barcode.__mod10(itf14[-13:-1])}'
+
+        return gtin13
+
 
 if __name__ == "__main__":
     print(Barcode.Interleaved2of5(sys.argv[1]))
     print(Barcode.CalculateUPC(sys.argv[1]))
+    print(Barcode.CalculateEAN(sys.argv[1]))
