@@ -526,13 +526,15 @@ def __ar_pricechange():
             g.cur.execute(query)
             result = g.cur.fetchone()
             if result is not None and 'upc' in result:
-                upc = Barcode.CalculateUPC(result['upc'])
-                ean = Barcode.CalculateEAN(result['upc'])
-                if int(upc) != int(ean):
-                    returnrows[row]['gtin12'] = upc
-                    returnrows[row]['gtin13'] = ean
-                else:
-                    returnrows[row]['gtin12'] = upc
+                # checking whether the barcode *could be* a GTIN-14 based on check digit
+                if Barcode.Interleaved2of5(result['upc']):
+                    upc = Barcode.CalculateUPC(result['upc'])
+                    ean = Barcode.CalculateEAN(result['upc'])
+                    if int(upc) != int(ean):
+                        returnrows[row]['gtin12'] = upc
+                        returnrows[row]['gtin13'] = ean
+                    else:
+                        returnrows[row]['gtin12'] = upc
     return returnrows
 
 
