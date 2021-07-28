@@ -37,15 +37,15 @@ class OrderSubmissionReport:
 
     KEYS='SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY'
 
-    ORDERLINE = re.compile(r'Order , ?\d{4,}$')
-    ORDERDATELINE = re.compile(r'Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
-    ORDERSHIPDATELINE = re.compile(r'Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
+    ORDERLINE = re.compile('Order , ?\d{4,}$')
+    ORDERDATELINE = re.compile('Order Booking Date *, *\d{2}[A-Z]{3}\d{2},*$')
+    ORDERSHIPDATELINE = re.compile('Expected Ship Date *, *\d{2}[A-Z]{3}\d{2},*$')
 
-    DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
+    DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
-    ITEMLISTLINE = re.compile(r'^\d{8}')
+    ITEMLISTLINE = re.compile('^\d{8}')
 
-    ITEMLINEOK = re.compile(r'\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
+    ITEMLINEOK = re.compile('\d+,\d+,[\w\d \.]+,(\d{1,3}\()?[\w\d \.]+\)?,(CS|BTL),\d+')
 
     def __init__(self, apiurl, apikey=''):
         """
@@ -64,7 +64,7 @@ class OrderSubmissionReport:
         :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
         :param kwargs: All data to be sent, as a json dict.
         """
-        print(f'API query to: http://{self.apiurl}{url}')
+        #print(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
                 r = self.__s.post(f'http://{self.apiurl}{url}', data={'apikey': self.apikey, **kwargs})
@@ -80,7 +80,8 @@ class OrderSubmissionReport:
         elif r.status_code >= 400:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
-        time.sleep(0.1)
+
+        time.sleep(0.05) #we need to rate limit this or the server will 503 us.
         return r.json(), r.status_code
 
     def __converttimedatetonum(self, time):
@@ -193,9 +194,9 @@ class OrderSubmissionReport:
 
                 if( append > 0 ):
                     #remove non-standard characters, whitespace between commas, and if multiple commas exist back to back replace with 0.
-                    line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
-                    line = re.sub(r'( , |, | ,)', ',', line)
-                    line = re.sub(r'(,,|, ,)', ',0.00,', line )
+                    line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
+                    line = re.sub('( , |, | ,)', ',', line)
+                    line = re.sub('(,,|, ,)', ',0.00,', line )
 
                     # subtotal denotes the end of a table.
                     if 'Subtotal' in line:
