@@ -179,14 +179,13 @@ class Barcode:
         return Barcode.Interleaved2of5(barcode)
 
     def Interleaved2of5(barcode: str):
-        """
-        Determine whether an Interleaved 2 of 5 passes its check digit."""
+        """Determine whether an Interleaved 2 of 5 passes its check digit."""
 
         if type(barcode) is not str:
             barcode = f"{barcode}"
 
         if type(barcode) is str and not barcode.isdigit():
-            raise ValueError(f'{barcode} is not a number.')
+            raise False
         
         return int(barcode[-1:]) == Barcode.__mod10(barcode[:-1])
 
@@ -214,6 +213,6 @@ class Barcode:
 
 
 if __name__ == "__main__":
-    print(Barcode.Interleaved2of5(sys.argv[1]))
-    print(Barcode.CalculateUPC(sys.argv[1]))
-    print(Barcode.CalculateEAN(sys.argv[1]))
+    print('Passes GTIN-14 check:', Barcode.Interleaved2of5(sys.argv[1]))
+    print('Calculated UPC-A:', Barcode.CalculateUPC(sys.argv[1]))
+    print('Calculated EAN-13:', Barcode.CalculateEAN(sys.argv[1]))
