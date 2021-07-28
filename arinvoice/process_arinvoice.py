@@ -80,7 +80,7 @@ class arinvoice:
         return r.json(), r.status_code
 
     # write price report to file, later will make this a redis DB
-    def __addtopricechangereport(self, invoicedate, **kwargs):
+    def __addtopricechangereport(self, invoicedate, newitems, **kwargs):
         """
         Compares incoming price per sku and outputs a price change to file.
 
@@ -108,13 +108,13 @@ class arinvoice:
                 fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
             else:
                 if 'gtin12' in kwargs and 'gtin13' in kwargs:
-                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**: {kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
+                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**: {kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
                 elif 'gtin12' in kwargs:
-                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: {kwargs['gtin12']}\n")
+                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: {kwargs['gtin12']}\n")
                 elif 'gtin13' in kwargs:
-                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*: {kwargs['gtin13']}\n")
+                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*: {kwargs['gtin13']}\n")
                 else:
-                    fp.write(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
+                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
             
             return 0
 
@@ -129,19 +129,24 @@ class arinvoice:
         print(len(rows))
 
         suppressedchanges = 0
+        newitems = []
 
         for row in rows.values():
             print(row)
-            suppressedchanges += self.__addtopricechangereport( invoicedate, **row )
+            suppressedchanges += self.__addtopricechangereport( invoicedate, newitems, **row )
 
         #if one or more price changes were below threshold, report that.
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
             if suppressedchanges > 0:
                 fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
-            fp.write('\n\nDisclaimer:\n')
-            fp.write('\t* Product barcode is calculated based on automated reports and may not be accurate.')
-            fp.write('\t** If UPC is presented as A+BBB/C format, UPC-A can be extracted by taking BBB.\n')
-            fp.write('\t   EAN-13 can be extracted by adding A to BBB and replacing the last B with C.\n')
+            if newitems:
+                fp.write('\n\nNew Items:\n\n')
+                for item in newitems:
+                    fp.write(item)
+                fp.write('\n\nDisclaimer:\n')
+                fp.write('\t* Product barcode is calculated based on automated reports and may not be accurate.\n')
+                fp.write('\t** If UPC is presented as A+BBB/C format, UPC-A can be extracted by taking BBB.\n')
+                fp.write('\t   EAN-13 can be extracted by adding A to BBB and replacing the last B with C.\n')
             
 
     def __dopricechangelist(self, invoicedate):
