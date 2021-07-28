@@ -76,7 +76,7 @@ class arinvoice:
             if r.status_code == 401: raise Exception('Not authorized')
             raise Exception(f'Error in client, GET/POST/PUT/PATCH/DELETE mismatch: {r.status_code}')
         
-        time.sleep(0.1)
+        time.sleep(0.05) #if we don't limit the number of queries per second the server will 503 us.
         return r.json(), r.status_code
 
     # write price report to file, later will make this a redis DB
@@ -86,6 +86,8 @@ class arinvoice:
 
         This will prepend various alerts for quick recognition of large changes.
 
+        :param pricechanges: 1D Array of price changes, passed as a reference.
+        :param newitems: 1D array of new items, passed as a reference.
         :param kwargs: Dict of values to compare against.
         """
         if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
@@ -103,16 +105,18 @@ class arinvoice:
             elif( kwargs['suprice'] >= (kwargs['oldprice'] + 1) ):
                 alert += '[pc$1+]'
 
-            pricechanges.append(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
+            pricechanges.append(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})")
         else:
+            upc = ''
+            #if this is a new item, calculate the UPC of the item if available.
             if 'gtin12' in kwargs and 'gtin13' in kwargs:
-                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**:  \t{kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
+                upc = f"\t\tCalculated UPC**:  \t{kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}"
             elif 'gtin12' in kwargs:
-                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: \t{kwargs['gtin12']}\n")
+                upc = f"\t\tCalculated UPC-A*: \t{kwargs['gtin12']}"
             elif 'gtin13' in kwargs:
-                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*:\t{kwargs['gtin13']}\n")
-            else:
-                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
+                upc = f"\t\tCalculated EAN-13*:\t{kwargs['gtin13']}"
+            
+            newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}{upc}")
         
         return 0
 
@@ -134,17 +138,20 @@ class arinvoice:
             print(row)
             suppressedchanges += self.__addtopricechangereport( invoicedate, pricechanges, newitems, **row )
 
-        #if one or more price changes were below threshold, report that.
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'w') as fp:
+            #document title
             fp.write(f'Price Delta Report for {invoicedate}\n\n')
+            #list of changes
             for item in pricechanges:
-                fp.write(item)
+                fp.write(f'{item}\n')
+            #if one or more price changes were below threshold, report that.
             if suppressedchanges > 0:
                 fp.write(f"\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
+            #list of new items
             if newitems:
                 fp.write(f'\n\nNew Items as of {invoicedate}:\n\n')
                 for item in newitems:
-                    fp.write(item)
+                    fp.write(f'{item}\n')
                 fp.write('\n\nDisclaimer:\n')
                 fp.write('\t* Product barcode is calculated based on automated reports and may not be accurate.\n')
                 fp.write('\t** If UPC is presented as A+BBB/C format, UPC-A can be extracted by taking BBB.\n')
@@ -192,12 +199,10 @@ class arinvoice:
 
         print('Total Rows: %s'%len(rows))
 
-        if not os.path.exists(f'{self.DIRECTORY}/{invoicedate}_for-PO-import.txt'):
-            with open(f'{self.DIRECTORY}/{invoicedate}_for-PO-import.txt', 'a') as fp:
-                for row in rows.values():
-                    fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['suquantity'], row['suprice'], row['productdescription'] ))
-        else:
-            print('Error: PO File exists')
+        with open(f'{self.DIRECTORY}/{invoicedate}_for-PO-import.txt', 'w') as fp:
+            for row in rows.values():
+                fp.write('%s,%s,%s,%s\n' % ( f'{row["sku"]:06}', row['suquantity'], row['suprice'], row['productdescription'] ))
+
 
     def __checkforbadbarcodes(self, invoicedate):
         """
@@ -246,14 +251,14 @@ class arinvoice:
                         print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
-                    line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
-                    line = re.sub(r'( , |, | ,)', ',', line)
-                    line = re.sub(r'(,,|, ,)', ',0.00,', line)
+                    line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
+                    line = re.sub('( , |, | ,)', ',', line)
+                    line = re.sub('(,,|, ,)', ',0.00,', line)
 
                     self.__addlineitem(line, invoicedate)
                 if( line.find( 'SKU,Product Description') > -1):
                     append=True
-                    emptyline = re.sub(r'[^,]','',line)
+                    emptyline = re.sub('[^,]','',line)
                     print(emptyline)
                     print(line.strip())
 
