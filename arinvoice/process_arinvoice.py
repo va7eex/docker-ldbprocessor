@@ -80,45 +80,43 @@ class arinvoice:
         return r.json(), r.status_code
 
     # write price report to file, later will make this a redis DB
-    def __addtopricechangereport(self, invoicedate, newitems, **kwargs):
+    def __addtopricechangereport(self, pricechanges, newitems, **kwargs):
         """
         Compares incoming price per sku and outputs a price change to file.
 
         This will prepend various alerts for quick recognition of large changes.
 
-        :param invoicedate: Date of invoice, to be placed in filename.
         :param kwargs: Dict of values to compare against.
         """
-        with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
-            if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
-                #ignore price changes below a threshold
-                if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return 1
+        if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
+            #ignore price changes below a threshold
+            if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return 1
 
-                alert=''
-                if( (kwargs['suprice']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
-                    alert += '[pc>10%]'
+            alert=''
+            if( (kwargs['suprice']-kwargs['oldprice'])/ kwargs['oldprice'] > 0.1 ):
+                alert += '[pc>10%]'
 
-                if( kwargs['suprice'] >= (kwargs['oldprice'] + 5) ):
-                    alert += '[pc$5+]'
-                elif( kwargs['suprice'] >= (kwargs['oldprice'] + 3) ):
-                    alert += '[pc$3+]'
-                elif( kwargs['suprice'] >= (kwargs['oldprice'] + 1) ):
-                    alert += '[pc$1+]'
+            if( kwargs['suprice'] >= (kwargs['oldprice'] + 5) ):
+                alert += '[pc$5+]'
+            elif( kwargs['suprice'] >= (kwargs['oldprice'] + 3) ):
+                alert += '[pc$3+]'
+            elif( kwargs['suprice'] >= (kwargs['oldprice'] + 1) ):
+                alert += '[pc$1+]'
 
-                fp.write(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
+            pricechanges.append(f"{alert} {kwargs['sku']:06}: {kwargs['oldprice']} changed to {kwargs['suprice']} (last updated {kwargs['oldlastupdated']})\n")
+        else:
+            if 'gtin12' in kwargs and 'gtin13' in kwargs:
+                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**:  \t{kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
+            elif 'gtin12' in kwargs:
+                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: \t{kwargs['gtin12']}\n")
+            elif 'gtin13' in kwargs:
+                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*:\t{kwargs['gtin13']}\n")
             else:
-                if 'gtin12' in kwargs and 'gtin13' in kwargs:
-                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC**: {kwargs['gtin13'][:1]}+{kwargs['gtin12']}/{kwargs['gtin13'][-1:]}\n")
-                elif 'gtin12' in kwargs:
-                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated UPC-A*: {kwargs['gtin12']}\n")
-                elif 'gtin13' in kwargs:
-                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\t\tCalculated EAN-13*: {kwargs['gtin13']}\n")
-                else:
-                    newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
-            
-            return 0
+                newitems.append(f"[NEW] {kwargs['sku']:06}: {kwargs['suprice']}\n")
+        
+        return 0
 
-    def __itmdb_checkchange(self, invoicedate):
+    def __itmdb_generatechangereport(self, invoicedate):
         """
         Queries API to find price changes and starts the report process.
         
@@ -130,17 +128,21 @@ class arinvoice:
 
         suppressedchanges = 0
         newitems = []
+        pricechanges = []
 
         for row in rows.values():
             print(row)
-            suppressedchanges += self.__addtopricechangereport( invoicedate, newitems, **row )
+            suppressedchanges += self.__addtopricechangereport( invoicedate, pricechanges, newitems, **row )
 
         #if one or more price changes were below threshold, report that.
-        with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'a') as fp:
+        with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'w') as fp:
+            fp.write(f'Price Delta Report for {invoicedate}\n\n')
+            for item in pricechanges:
+                fp.write(item)
             if suppressedchanges > 0:
-                fp.write(f"\n\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
+                fp.write(f"\n{suppressedchanges} items were below the ${self.pricechangeignore} threshold and have been ignored.\n")
             if newitems:
-                fp.write('\n\nNew Items:\n\n')
+                fp.write(f'\n\nNew Items as of {invoicedate}:\n\n')
                 for item in newitems:
                     fp.write(item)
                 fp.write('\n\nDisclaimer:\n')
@@ -160,7 +162,7 @@ class arinvoice:
         for row in rows.values():
             rows, status = self.__apiquery('POST', '/ar/pricechange', **{'sku': f"{row['sku']}", 'price': f"{row['suprice']}"})
         
-        self.__itmdb_checkchange(invoicedate)
+        self.__itmdb_generatechangereport(invoicedate)
 
     def __addlineitem(self, line, invoicedate):
         """
