@@ -28,40 +28,6 @@ import requests
 
 class BarcodeProcessor:
 
-    BARCODETYPELOOKUPTABLE = {
-        '01':'Code 39',
-        '02':'Codabar',
-        '03':'Code 128',
-        '0C':'Code 11',
-        '72':'Chinese 2 of 5',
-        '04':'Discrete 2 of 5',
-        '05':'IATA 2 of 5',
-        '06':'Interleaved 2 of 5',
-        '07':'Code 93',
-        '08':'UPC-A',
-        '48':'UPC-A.2',
-        '88':'UPC-A.5',
-        '09':'UPC-E0',
-        '49':'UPC-E0.2',
-        '89':'UPC-E0.5',
-        '0A':'EAN-8',
-        '4A':'EAN-8.2',
-        '8A':'EAN-8.5',
-        '0B':'EAN-13',
-        '4B':'EAN-13.2',
-        '8B':'EAN-13.5',
-        '0E':'MSI',
-        '0F':'GS1-128',
-        '10':'UPC-E1',
-        '50':'UPC-E1.2',
-        '90':'UPC-E1.5',
-        '15':'Trioptic Code 39',
-        '17':'Bookland EAN',
-        '23':'GS1 Databar Ltd',
-        '24':'GS1 Databar Omni',
-        '25':'GS1 Databar Exp'
-    }
-
     key_scan = 'scanned'
     key_tally = '_tally'
     key_checksum = 'checksum'
@@ -160,7 +126,7 @@ class BarcodeProcessor:
                 'datestamp': datestamp}
 
     def __santitizeline(self, line):
-        line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line)
+        line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
         line = line.replace('\n','').split(',')
         datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
         return f'{datescanned},' + ','.join(line[1:])
@@ -218,10 +184,7 @@ class BarcodeProcessor:
                 else:
                     # increment the key 'scanned barcode' by 1. If the key doesn't exist create and make it 1
                     self.__apiquery('POST', '/bc/scan', **self.__urlpayload(f'cs,{line[2]}{line[3]}', datescanned))
-                    #generate stats, I love stats.
-                    # if not 'DOESNOTSCAN' in line[3]:
-                    #     self.__r.hincrby(f'{latestdate}_scanstats', 'length: %s'%len(line[3]),1)
-                    #     self.__r.hincrby(f'{latestdate}_scanstats', self.BARCODETYPELOOKUPTABLE[line[2]],1)
+                    
                     #if the data on the line is larger than 20 flag it for review.
                     if( len(line[3]) > 20 ):
                         forReview.append(line[3])
@@ -232,9 +195,7 @@ class BarcodeProcessor:
 
         self.scannedlist = {}
         self.scannedlist[latestdate] = {}
-        # self.scannedlist[latestdate]['receiving_type']=inventorytype
         self.scannedlist[latestdate]['barcodes_by_pallet'], self.scannedlist[latestdate]['_total_by_pallet'], self.scannedlist[latestdate]['_total'] = self.__countBarcodes(latestdate)
-        # self.scannedlist[latestdate]['stats4nerds'] = self.__r.hgetall(f'{latestdate}_scanstats')
         if( len(forReview) > 0 ):
             self.scannedlist[latestdate]['_possible_scan_errors'] = forReview
 
