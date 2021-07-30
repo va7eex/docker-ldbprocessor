@@ -136,7 +136,7 @@ class arinvoice:
 
         for row in rows.values():
             print(row)
-            suppressedchanges += self.__addtopricechangereport( invoicedate, pricechanges, newitems, **row )
+            suppressedchanges += self.__addtopricechangereport( pricechanges, newitems, **row )
 
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'w') as fp:
             #document title
