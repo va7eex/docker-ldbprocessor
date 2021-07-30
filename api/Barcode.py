@@ -168,10 +168,10 @@ class Barcode:
         4. check digit % 10 again just for edge cases were the check digit is 10
         """
         odd, even = Barcode.__oddeven(barcode)
-        print(even,odd,sum(even),sum(odd))
+        # print(even,odd,sum(even),sum(odd))
 
         mod10 = (10-((sum(even)+sum(odd)*3)%10)) %10
-        print(f'Mod10: {mod10}')
+        # print(f'Mod10: {mod10}')
         return mod10
 
     def GTIN14(barcode: str):
