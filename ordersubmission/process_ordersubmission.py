@@ -19,6 +19,7 @@ import os
 import time
 import datetime
 import requests
+import logging
 from datetime import date
 #import pymysql
 
@@ -50,7 +51,7 @@ class OrderSubmissionReport:
     def __init__(self, apiurl, apikey=''):
         """
         """
-        print('LDB OSR Processor started.')
+        logging.info('LDB OSR Processor started.')
 
         self.apiurl = apiurl
         self.apikey = apikey
@@ -63,8 +64,12 @@ class OrderSubmissionReport:
         :param method: The HTTP method to use, ex GET/SET/PUT.
         :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
         :param kwargs: All data to be sent, as a json dict.
+
+        :raise Exception: Raises exception when http code is not 200.
+        :return: Returns a tuple containing the json response and http status code.
+        :rtype: dict, int
         """
-        #print(f'API query to: http://{self.apiurl}{url}')
+        #logging.info(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
                 r = self.__s.post(f'http://{self.apiurl}{url}', data={'apikey': self.apikey, **kwargs})
@@ -85,7 +90,11 @@ class OrderSubmissionReport:
         return r.json(), r.status_code
 
     def __converttimedatetonum(self, time):
-        """Standardizes timestamp."""
+        """Standardizes timestamp.
+
+        :rtype: str
+        :return: Returns a re-formatted date stamp.
+        """
 
         # %d%b%y = 02DEC20
 
@@ -96,6 +105,8 @@ class OrderSubmissionReport:
         Gets a specific order from API.
 
         :param ordernumber: The order number to retrieve.
+        :rtype: dict
+        :return: Returns a json array from the server.
         """
 
         if ordernumber == 'NaN':
@@ -114,12 +125,14 @@ class OrderSubmissionReport:
         :param ordernumber: The order this item was submitted from.
         :param orderdate: The date this item was ordered.
         :param thirdparty: Whether this is coming from a third party warehouse.
+
+        :rtype: None
         """
         if line == 'SKU,UPC,PRODUCT DESCRIPTION,SELLING UNITSIZE,UOM,QTY' or line == ',,,,,':
             return
 
         if( self.ITEMLINEOK.match(line) is None ):
-            print( f'Line failed validation:\n\t{line}' )
+            logging.warning( f'Line failed validation:\n\t{line}' )
             return
 
         li = LineItem(*line.split(','))
@@ -128,7 +141,7 @@ class OrderSubmissionReport:
             **{'orderdate': orderdate, 'ordernumber': ordernumber, 'thirdparty': thirdparty, **li.getall(urlsafe=True)}
             )
 
-        print(status)
+        logging.debug(status)
 
     def __processCSV(self, inputfile):
         """
@@ -151,46 +164,46 @@ class OrderSubmissionReport:
                 #check if any dollar values exceed $999, if it does remove errant commas.
                 imparsabledollaramount = self.DOLLARAMOUNT.search(line)
                 if imparsabledollaramount is not None:
-                    print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
+                    logging.warning( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
                     line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
                 #strip all non-alphanumeric characters and whitespace greater than 2
 
-                line = re.sub(r'([^ \sa-zA-Z0-9.,]| {2,})','',line).strip()
+                line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line).strip()
 
                 #regex find the order number, date, and expected ship date
                 ols = self.ORDERLINE.search(line)
                 if( ols is not None ):
-                    print(line)
+                    logging.info(line)
                     ordernum = ols.group(0).split(',')[1].strip()
-                    print(ordernum)
+                    logging.info(ordernum)
                 odls = self.ORDERDATELINE.search(line)
                 if( odls is not None ):
-                    print(line)
+                    logging.info(line)
                     orderdate = self.__converttimedatetonum(odls.group(0).split(',')[1].strip())
-                    print(orderdate)
+                    logging.info(orderdate)
                 osdls = self.ORDERSHIPDATELINE.search(line)
                 if( osdls is not None ):
-                    print(line)
+                    logging.info(line)
                     ordershipdate = self.__converttimedatetonum(osdls.group(0).split(',')[1].strip())
-                    print(ordershipdate)
+                    logging.info(ordershipdate)
 
                 # each of these headers indicates the start of a new table.
 
                 if( line.find('LDB Stocked Product Expected for Delivery') > -1):
                     #we care about this one
                     append=1
-                    print('Append = 1')
+                    logging.info('Append = 1')
                 elif( line.find('LDB Stocked Product Currently Unavailable') > -1):
                     append=2
-                    print('Append = 2')
+                    logging.info('Append = 2')
                 elif( line.find('Third Party Warehouse Stocked Product on Order') > -1):
                     #we care about this one
                     append=4
-                    print('Append = 4')
+                    logging.info('Append = 4')
                 elif( line.find('Third Party Warehouse Stocked Product Currently Unavailable') > -1):
                     append=8
-                    print('Append = 8')
+                    logging.info('Append = 8')
 
                 if( append > 0 ):
                     #remove non-standard characters, whitespace between commas, and if multiple commas exist back to back replace with 0.

@@ -8,9 +8,10 @@ __maintainer__ = "David Rickett"
 __email__ = "dap.rickett@gmail.com"
 __status__ = "Production"
 
-#start
+#start:
 #SKU,"Product Description","Product Category",Size,Qty,UOM,"Price per UOM","Extended Price","SU Price","WPP Savings","Cont. Deposit","Original Order#"
-#end
+
+#end:
 #,,,,,,,,,,,
 
 from logging import exception
@@ -23,6 +24,7 @@ import re
 import random
 import string
 import time
+import logging
 
 import requests
 
@@ -60,8 +62,12 @@ class BarcodeProcessor:
         :param method: The HTTP method to use, ex GET/SET/PUT.
         :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
         :param kwargs: All data to be sent, as a json dict.
+
+        :raise Exception: Raises exception when http code is not 200.
+        :return: Returns a tuple containing the json response and http status code.
+        :rtype: dict, int
         """
-        print(f'API query to: http://{self.apiurl}{url}')
+        logging.info(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
                 r = self.__s.post(f'http://{self.apiurl}{url}', data={'apikey': self.apikey, **kwargs})
@@ -81,6 +87,18 @@ class BarcodeProcessor:
         return r.json(), r.status_code
     
     def __lookupUPC(self, barcodes):
+        """
+        Crossreferences barcodes scanned by CS3000 series scanners with CSPC/SKU numbers provided by Order Report Processor.
+        Will attempt two rounds of matching in descending order of accuracy:
+        - First round is a direct search
+        - Second round is searching with a substring by removing the GTIN-14 Indicator and Check Digit.
+
+        If a match is found, this will replace the key `barcode` with the key `sku,    description`. The presence of `!!` in this indicates it is a round 2 match and may not be as accurate.
+
+        :param dict barcodes: A key-value list formatted as `{ barcode: quantity }`.
+        :rtype: dict
+        :return: Returns a dict formatted as `{ barcode/sku: quantity }`.
+        """
         parsedbarcodes = {}
         for bc, qty in barcodes.items():
             # only perform queries on numbers only.
@@ -109,9 +127,17 @@ class BarcodeProcessor:
         return parsedbarcodes
 
     def __countBarcodes(self, datestamp):
+        """
+        Retrieves the list of barcodes scanned, and totals. Attempts to cross reference UPCs with SKUs.
+
+        :param str datestamp: A date in YYYYMMDD.
+
+        :rtype: dict, dict, int
+        :return: Returns a list of barcodes, a tally per scangroup, and a total of all barcodes.
+        """
         payload, status = self.__apiquery('GET','/bc/countbarcodes', **{'datestamp': datestamp})
 
-        print(payload)
+        logging.debug(payload)
 
         barcodes = {}
         for scangroup in payload['barcodes'].keys():
@@ -120,18 +146,41 @@ class BarcodeProcessor:
         return barcodes, payload['tally'], payload['total']
 
     def __urlpayload(self, upc, datestamp):
-        return {'machine': True,
+        """Formats url payload.
+
+        :param int upc: UPC scanned.
+        :param datetime: Datestamp in YYYYMMDD.
+        
+        :rtype: dict
+        :return: Returns a dict of values to be sent in a web request.
+        """
+        return {'machine': True, #supresses some checks on the server side
                 'upc': upc,
                 'scangroup': self.scangroup,
                 'datestamp': datestamp}
 
     def __santitizeline(self, line):
+        """
+        Strips any unwanted characters and whitespace from the line and reformats date stamp.
+        
+        :param str line: A full line from the file.
+        :rtype: str
+        :return: A sanitized string.
+        """
         line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
         line = line.replace('\n','').split(',')
         datescanned = datetime.datetime.strptime(line[0], '%d%m%Y').strftime('%Y%m%d')
         return f'{datescanned},' + ','.join(line[1:])
 
     def __findlastdate(self, file):
+        """
+        Finds and returns the latest date in the file uploaded from the CS3070.
+        
+        :param str file:
+
+        :rtype: str
+        :return: Finds the latest date in the scanned file.
+        """
         with open(file, 'r') as f:
             lines = f.read().splitlines()
             last_line = self.__santitizeline(lines[-1]).split(',')
@@ -186,6 +235,7 @@ class BarcodeProcessor:
                     self.__apiquery('POST', '/bc/scan', **self.__urlpayload(f'cs,{line[2]}{line[3]}', datescanned))
                     
                     #if the data on the line is larger than 20 flag it for review.
+                    #this occurs on some products that concatenate two different GS1 codes into a single barcode.
                     if( len(line[3]) > 20 ):
                         forReview.append(line[3])
                     previousline=line[3]

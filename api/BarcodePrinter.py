@@ -105,6 +105,8 @@ class LabelMaker:
         :param str text: Text to be printed on label.
         :param str barcode: Barcode to be printed on label.
         :param int quantity: Quantity of labels to be printed. Quantity will be divided by columns of media and truncated.
+
+        :raise ConnectionError: Fails to connect to printer.
         """
         zpl = ZPLDocument()
         
@@ -133,8 +135,11 @@ class LabelMaker:
 
         zpl.add_print_quantity(int(int(quantity)/self.columns))
         
-        printer = NetworkPrinter(self.ipaddress,self.port)
-        printer.print_zpl(zpl)
+        try:
+            printer = NetworkPrinter(self.ipaddress,self.port)
+            printer.print_zpl(zpl)
+        except:
+            raise ConnectionError()
 
     def printPriceLabel(self, text: str, subtext: str = '', sku: str = '',
                         barcode: str = '', quantity: int = 1, price: float = 0.00,
@@ -190,8 +195,11 @@ class LabelMaker:
 
         zpl.add_print_quantity(int(int(quantity)/self.columns))
         
-        printer = NetworkPrinter(self.ipaddress,self.port)
-        printer.print_zpl(zpl)
+        try:
+            printer = NetworkPrinter(self.ipaddress,self.port)
+            printer.print_zpl(zpl)
+        except:
+            raise ConnectionError()
 
 if __name__=='__main__':
     lm = LabelMaker(ipaddress = sys.argv[1], fontsize=int(sys.argv[4]))

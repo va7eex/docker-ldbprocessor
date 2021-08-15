@@ -15,6 +15,8 @@ ENV REDIS_IP=127.0.0.1
 ENV REDIS_PORT=6379
 ENV LABEL_MAKER=127.0.0.1
 ENV FLASK_SECRET=129310928391283091823091281
+#log levels are multiples of 10
+ENV LOGLEVEL=20
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
      && date

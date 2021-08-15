@@ -20,6 +20,7 @@ import time
 import datetime
 import re
 import requests
+import logging
 from datetime import date
 
 from LineItem import LineItemAR as LineItem
@@ -28,14 +29,14 @@ class arinvoice:
     """
     For processing BCLDB Store 100 ARinvoice files sent out to accompany the weekly order.
 
-    Files are sent with the name format r'XXARNEWINVOICE_[0-9]{5,}_1.xls'.
+    Files are sent with the name format `XXARNEWINVOICE_[0-9]{5,}_1.xls`.
     BCLDB uses Oracle BI Publisher to send files.
     """
 
     DIRECTORY='/var/ldbinvoice'
     PB_FILE='processedbarcodes.json'
 
-    DOLLARAMOUNT = re.compile(r'\$\d+,\d{3}')
+    DOLLARAMOUNT = re.compile('\$\d+,\d{3}')
 
     def __init__(self, apiurl, apikey='', pricechangeignore=0.0):
         """
@@ -58,8 +59,12 @@ class arinvoice:
         :param method: The HTTP method to use, ex GET/SET/PUT.
         :param url: Example the '/foo/bar' of 'localhost:1234/foo/bar'
         :param kwargs: All data to be sent, as a json dict.
+
+        :raise Exception: Raises exception when http code is not 200.
+        :return: Returns a tuple containing the json response and http status code.
+        :rtype: dict, int
         """
-        print(f'API query to: http://{self.apiurl}{url}')
+        logging.debug(f'API query to: http://{self.apiurl}{url}')
         if self.apikey:
             if method == 'POST':
                 r = self.__s.post(f'http://{self.apiurl}{url}', data={'apikey': self.apikey, **kwargs})
@@ -89,9 +94,13 @@ class arinvoice:
         :param pricechanges: 1D Array of price changes, passed as a reference.
         :param newitems: 1D array of new items, passed as a reference.
         :param kwargs: Dict of values to compare against.
+
+        :return: Returns 1 if a price change is suppressed, returns 0 under normal conditions.
+        :rtype: int
         """
         if kwargs['oldprice'] is not None and kwargs['oldlastupdated'] is not None:
             #ignore price changes below a threshold
+            
             if abs(kwargs['suprice']-kwargs['oldprice'])<self.pricechangeignore: return 1
 
             alert=''
@@ -125,17 +134,19 @@ class arinvoice:
         Queries API to find price changes and starts the report process.
         
         :param invoicedate: The date to check against.
+        
+        :rtype: None
         """
         rows, status = self.__apiquery('GET', '/ar/pricechange', **{'invoicedate': invoicedate})
 
-        print(len(rows))
+        logging.debug(len(rows))
 
-        suppressedchanges = 0
+        suppressedchanges = 0 # number of suppressed changes
         newitems = []
         pricechanges = []
 
         for row in rows.values():
-            print(row)
+            logging.debug(row)
             suppressedchanges += self.__addtopricechangereport( pricechanges, newitems, **row )
 
         with open(f'{self.DIRECTORY}/{invoicedate}_pricedeltareport.txt', 'w') as fp:
@@ -163,6 +174,8 @@ class arinvoice:
         Updates API with order's prices.
 
         :param invoicedate: Date of invoice.
+
+        :rtype: None
         """
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
@@ -177,6 +190,8 @@ class arinvoice:
 
         :param line: A line read from the incoming csv file.
         :param invoicedate: Date of invoice.
+
+        :rtype: None
         """
 
         li = LineItem(*line.split(','))
@@ -192,12 +207,14 @@ class arinvoice:
         Please note, all values after and including $unneccessarydetails are ignored, they're just there for humans.
 
         :param invoicedate: Date of invoice.
+
+        :rtype: None
         """
-        print(f'Printing invoice {invoicedate} to file')
+        logging.info(f'Printing invoice {invoicedate} to file')
 
         rows, status = self.__apiquery('GET', '/ar/getinvoice', **{'invoicedate': invoicedate})
 
-        print('Total Rows: %s'%len(rows))
+        logging.info('Total Rows: %s'%len(rows))
 
         with open(f'{self.DIRECTORY}/{invoicedate}_for-PO-import.txt', 'w') as fp:
             for row in rows.values():
@@ -211,9 +228,11 @@ class arinvoice:
         Label templates are preformatted and mathematically generated via the BarcodePrinter class in API.
 
         :param invoicedate: Date of invoice.
+
+        :rtype: None
         """
         rows, status = self.__apiquery('GET', '/ar/findbadbarcodes', **{'invoicedate': invoicedate})
-        print(len(rows))
+        logging.info(len(rows))
 
         for row in rows.values():
             self.__apiquery('POST', '/labelmaker/print', **row)
@@ -226,6 +245,8 @@ class arinvoice:
         This will also extract the invoice date from the file.
 
         :param inputfile: File to read from. Can be full or relative path.
+
+        :rtype: None
         """
         #this is what an empty line looks like
         emptyline = ',,,,,,,,,,,,,'
@@ -236,19 +257,19 @@ class arinvoice:
                 line = line.strip()
 
         #        if( not append ):
-        #            print(line)
+        #            logging.info(line)
 
                 if(line.find('Invoice Date:') > -1 ):
                     invoicedatefromldb=str(line.split(',')[len(line.split(','))-1].strip())
         #            invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%Y-%m-%d %H:%M:%S.%f')
                     invoicedate = datetime.datetime.strptime(invoicedatefromldb,'%d-%b-%y').strftime('%Y-%m-%d')
-                    print(invoicedate)
+                    logging.info(invoicedate)
                 if( line.strip() == emptyline.strip() and append ):
                     append=False
                 if( append ):
                     imparsabledollaramount = self.DOLLARAMOUNT.search(line)
                     if imparsabledollaramount is not None:
-                        print( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
+                        logging.warning( f'!!! WARNING: comma in dollar amount !!! {imparsabledollaramount.group()}' )
                         line = line.replace(imparsabledollaramount.group(), imparsabledollaramount.group().replace(',',''))
 
                     line = re.sub('([^ \sa-zA-Z0-9.,]| {2,})','',line)
@@ -259,8 +280,8 @@ class arinvoice:
                 if( line.find( 'SKU,Product Description') > -1):
                     append=True
                     emptyline = re.sub('[^,]','',line)
-                    print(emptyline)
-                    print(line.strip())
+                    logging.info(emptyline)
+                    logging.info(line.strip())
 
         self.__checkforbadbarcodes( invoicedate )
         self.__dopricechangelist( invoicedate )

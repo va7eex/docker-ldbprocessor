@@ -14,6 +14,8 @@ import csv
 import string
 import random
 import json
+import time
+import logging
 from datetime import datetime
 
 from flask import Flask
@@ -53,7 +55,17 @@ mysql.init_app(app)
 app.config['REDIS_URL'] = f'redis://{os.getenv("REDIS_IP")}:{os.getenv("REDIS_PORT")}/0'
 redis_client = FlaskRedis(app, decode_responses=True)
 
+logging.basicConfig(level=int(os.getenv('LOGLEVEL')))
+
 def __buildtables():
+
+    startconnecttime = time.time_ns()
+    while not mysql:
+        time.sleep(1)
+        pass
+    endconnecttime = time.time_ns()
+
+    logging.info(f'SQL Database reached after {endconnecttime-startconnecttime} ns')
 
     connection = mysql.connect()
     cur = connection.cursor()
@@ -148,7 +160,6 @@ def page_labelmaker():
 def before_request():
     g.connection = mysql.connect()
     g.cur = g.connection.cursor()
-    print()
 
 @app.after_request
 def after_request_func(response):
@@ -220,14 +231,14 @@ def __countBarcodes(scandate, crossref=False):
     total = 0
     for key in redis_client.scan_iter(match=f'{scandate}_ingest_*'):
         key = str(key)
-        print(key)
+        logging.info(key)
         if crossref:
             barcodes[key] = __crossreference_UPCs(redis_client.hgetall(key))
         else:
             barcodes[key] = redis_client.hgetall(key)
         tally[key] = __sumRedisValues(redis_client.hvals(key))
         total += tally[key]
-        print(total, tally[key])
+        logging.info(total, tally[key])
     return barcodes, tally, total
 
 @app.route('/bc/countbarcodes', methods=['GET'])
@@ -269,7 +280,7 @@ def page_bcscan():
     #TODO: https://supportcommunity.zebra.com/s/article/Determine-Barcode-Symbology-by-using-Symbol-or-AIM-Code-Identifiers?language=en_US
     # implement this
 
-    print (request.form)
+    logging.info(request.form)
 
     redishashkey = f'{datestamp}_ingest_{escape(session["scanner_terminal"])}_{scangroup.zfill(3)}'
 
@@ -282,7 +293,7 @@ def page_bcscan():
             redis_client.hdel(redishashkey,upc)
     else:
         redis_client.hincrby(redishashkey, upc,1)
-        print(redishashkey, upc)
+        logging.info(redishashkey, upc)
         redis_client.expire(redishashkey, (60*60*24)*3) #expire this in 3 days to keep DB size small.
 
     redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
@@ -306,11 +317,11 @@ def __bc_getstatus():
     return jsonify(**payload)
 
 def __bc_deleteRedisDB( scandate):
-        print( f'Deleting databases for {scandate}:' )
+        logging.info( f'Deleting databases for {scandate}:' )
         count = 0
         pipe = redis_client.pipeline()
         for key in redis_client.scan_iter(str(f'{scandate}_ingest_{escape(session["scanner_terminal"])}') + '*'):
-            print(f'\t{key}')
+            logging.info(f'\t{key}')
             pipe.delete(key)
             count += 1
         pipe.execute()
@@ -431,7 +442,7 @@ def __osr_getorder():
     details = g.cur.fetchone()
     returnrows = {}
     returnrows['items'] = rows
-    print(f'{returnrows} || {details}')
+    logging.info(f'{returnrows} || {details}')
     #for row in rows:
     #    returnrows['items'].append(rows.pop(0)
     return { **returnrows, **details}
@@ -449,12 +460,16 @@ def __osr_addlineitem():
     orderdate = escape(request.form.get('orderdate','19990101'))
     thirdparty = escape(request.form.get('thirdparty',False))
     restofrequest = request.form.to_dict(flat=True)
-    li = LineItemOS(**restofrequest)
+    try:
+        li = LineItemOS(**restofrequest)
+    except Exception as err:
+        logging.error(err)
+        return {'success': False, 'reason': 'line item error'}
 
     query = f'INSERT INTO orderlog (ordernumber, orderdate, {li.getkeysconcat()}, thirdparty ) VALUES ( {ordernumber}, \'{orderdate}\', {li.getvaluesconcat()}, {thirdparty} )'
     g.cur.execute(query)
 
-    return li.getall()
+    return {'success': True, 'lineitem': li.getall()}
 
 
 #
@@ -486,7 +501,7 @@ def __ar_pricechange():
         newitem = False
         oldprice = -1.0
         oldlastupdated = '1979-01-01 01:01:01'
-        #print(len(results), results)
+        #logging.info(len(results), results)
         if not results:
             newitem = True
         else:
@@ -504,7 +519,7 @@ def __ar_pricechange():
         query = f'SELECT * FROM iteminfolist WHERE sku={sku}'
         g.cur.execute(query)
         results = g.cur.fetchone()
-        #print(len(results), results)
+        #logging.info(len(results), results)
 
         return {'newitem': newitem, **results }
 
@@ -512,7 +527,7 @@ def __ar_pricechange():
 
     #https://stackoverflow.com/questions/11357844/cross-referencing-tables-in-a-mysql-query
     query = f'SELECT DISTINCT invoicelog.refnum, invoicelog.sku, invoicelog.suprice, iteminfolist.price, iteminfolist.oldprice, iteminfolist.lastupdated, iteminfolist.oldlastupdated FROM invoicelog, iteminfolist WHERE invoicelog.sku=iteminfolist.sku AND invoicelog.invoicedate=\'{invoicedate}\''
-    #print(query)
+    #logging.info(query)
     
     g.cur.execute(query)
 
@@ -570,7 +585,7 @@ def __ar_getitem():
     query += ' ORDER BY invoicedate DESC'
     if not allitems.lower() == 'true' or not (startdate or enddate):
         query += ' LIMIT 1'
-    print(query)
+    logging.info(query)
 
     g.cur.execute(query)
     rows = g.cur.fetchall()
@@ -596,11 +611,15 @@ def __ar_addlineitem():
 
     invoicedate = escape(request.form.get('invoicedate',''))
     restofrequest = request.form.to_dict(flat=True)
-    li = LineItemAR(**restofrequest)
+    try:
+        li = LineItemAR(**restofrequest)
+    except Exception as err:
+        logging.error(err)
+        return {'success': False, 'reason': 'line item error'}
 
     query = f"INSERT INTO invoicelog ({li.getkeysconcat()},invoicedate) VALUES ({li.getvaluesconcat()},\'{invoicedate}\')"
     g.cur.execute(query)
-    return {'success': True}
+    return {'success': True, 'lineitem': li.getall()}
 
 @app.route('/ar/getinvoice', methods=['GET'])
 @auto.doc(expected_type='application/json', getargs={
@@ -632,7 +651,7 @@ def __ar_getinvoice():
 
     invoice = {}
     rows = g.cur.fetchall()
-    print('Total Rows: %s'%len(rows))
+    logging.info('Total Rows: %s'%len(rows))
 
     for row in range(len(rows)):
         invoice[row] = rows.pop(0)
@@ -680,7 +699,7 @@ def page_itemmod():
         g.cur.execute(query)
 
         rows = g.cur.fetchone()
-        print(rows)
+        logging.info(rows)
         if not bool(rows):
             rows = {'sku':0, 'productdescription': '', 'badbarcode': False}
     return render_template('itemmodify.html', **rows)
@@ -706,10 +725,10 @@ def __misc_badbarcode():
     if request.method == 'POST':
         sku = escape(request.form.get('sku',0))
         badbarcode = int(escape(request.form.get('badbarcode',0)))
-        print(f'badbarcode={bool(badbarcode)}')
+        logging.info(f'badbarcode={bool(badbarcode)}')
         
         query = f'INSERT INTO iteminfolist (sku, badbarcode) VALUES ({sku},{bool(badbarcode)}) ON DUPLICATE KEY UPDATE badbarcode={bool(badbarcode)}'
-        print(query)
+        logging.info(query)
         g.cur.execute(query)
 
     query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
@@ -728,7 +747,7 @@ def __itemsearch(upc):
     upc, upctype = Barcode.BarcodeType(escape(request.args.get('upc','')))
     
     query = f'SELECT sku, upc, productdescription FROM orderlog WHERE sku={upc} OR upc REGEXP {upc}'
-    print(query)
+    logging.info(query)
     g.cur.execute(query)
 
     rows = g.cur.fetchall()
@@ -749,7 +768,7 @@ def itemsearch():
         return {'success': False}, 406
 
     rows = __itemsearch(upc)
-    print(rows)
+    logging.info(rows)
     if len(rows) == 0:
         return {'success': False}, 204
 
@@ -777,7 +796,7 @@ def setupLabelMakers():
     # with open('printers.csv', newline='') as csvfile:
     #     printerreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     #     for row in printerreader:
-    #         print(row)
+    #         logging.info(row)
     #         #ipaddress,port,description,width,height,metric,dpi,margins,columns,fontsize
     #         labelmakers.append(LabelMaker(
     #             ipaddress=row['ipaddress'], port=row['port'], metric=row['metric'], dpi=row['dpi'],
@@ -817,7 +836,6 @@ def __label_info():
             'qty': 'Quantity of labels printed'
             })
 #@use_kwargs({'printer': fields.Int(), 'name': fields.Str(), 'sku': fields.Str(), 'qty': fields.Int()})
-
 def __label_print():
     """
     Performs a print function on a designated printer.
@@ -845,8 +863,11 @@ def __label_print():
     if not quantity.isdigit(): quantity = '12'
     if quantity: quantity = f'{abs(int(quantity))}'
 
-    print(name, sku, quantity)
-    labelmakers[int(printer)].printReplacementLabel(name,sku,int(quantity))
+    logging.info(name, sku, quantity)
+    try:
+        labelmakers[int(printer)].printReplacementLabel(name,sku,int(quantity))
+    except ConnectionError as err:
+        logging.error(err)
 
     return {'success': True, 'name': name, 'sku': sku, 'qty': quantity }
 
@@ -867,7 +888,12 @@ def __countAllBarcodes_inv():
     return redis_client.hgetall('master_inventory')
 
 @app.route('/inv/scan', methods=['POST'])
-@auto.doc(expected_type='application/json')
+@auto.doc(expected_type='application/json', args={
+            'scanner_terminal': 'Terminal of user',
+            'upc': 'Barcode scanned.',
+            'quantity': 'Quantity of specific barcode.',
+            'addremove': 'add/remove'
+            })
 def page_invscan():
     """Scan into master record for today."""
 
@@ -890,7 +916,7 @@ def page_invscan():
             redis_client.hset(redishashkey,upc,0)
     else:
         redis_client.hincrby(redishashkey, upc,quantity)
-        print(redishashkey, upc)
+        logging.info(redishashkey, upc)
         redis_client.expire(redishashkey, (60*60*24)*3) #expire this in 3 days to keep DB size small.
 
     redis_client.set(f'lastscanned_{session["scanner_terminal"]}', upc)
@@ -902,8 +928,15 @@ def page_invscan():
     return {'success': True, **payload}
 
 @app.route('/inv/linksku', methods=['POST'])
-@auto.doc(expected_type='application/json')
+@auto.doc(expected_type='application/json', args={
+            'upc': 'upc of item',
+            'sku': 'SKU of item'
+            })
 def inv_linksku():
+    """Deprecated. Moved to Item Attributes.
+
+    Links single item barcodes to SKUs.
+    """
     upc, upctype    = Barcode.BarcodeType(escape(request.form.get('upc',0)))
     sku = escape(request.form.get('sku',''))
 
@@ -916,8 +949,13 @@ def inv_linksku():
     return {'success': True, 'reason': f'{upc} linked to {sku}', 'upc': upc, 'sku': sku}
 
 @app.route('/inv/exportscanlog', methods=['POST'])
-@auto.doc(expected_type='application/json')
+@auto.doc(expected_type='application/json', args={
+            'scanner_terminal': 'Terminal of user',
+            'allscanners': 'yes/no, clear all scanners or individual unit.'
+            })
 def inv_exportlog():
+    """Exports a csv file formatted for Profitek's inventory task list.
+    """
 
     date = datetime.today().strftime('%Y%m%d')
     scanner_terminal = escape(session["scanner_terminal"])
@@ -925,22 +963,27 @@ def inv_exportlog():
 
     if 'yes' in allscanners.lower():
         #get absolutely everything
-        somedict = __countAllBarcodes_inv()
+        invdict = __countAllBarcodes_inv()
     else:
-        somedict = redis_client.hgetall(f'inventory_{scanner_terminal}')
-    print(somedict)
+        invdict = redis_client.hgetall(f'inventory_{scanner_terminal}')
+    logging.debug(invdict)
 
     with open(f'/var/ldbinvoice/{date}_{scanner_terminal}_inventory_scan_log.txt', 'w') as f:
-        for k,v in somedict.items():
+        for k,v in invdict.items():
             line = f"{k},{v}"
-            print(line)
+            logging.info(line)
             f.write(f'{line}\n')
 
     return {'success': True}
 
 @app.route('/inv/clearall', methods=['POST'])
-@auto.doc(expected_type='application/json')
+@auto.doc(expected_type='application/json', args={
+            'scanner_terminal': 'Terminal of user',
+            'allscanners': 'yes/no, clear all scanners or individual unit.'
+            })
 def inv_clearall():
+    """Clears any logged inventory counters.
+    """
 
     allscanners = escape(request.form.get('allscanners','yes'))
 
