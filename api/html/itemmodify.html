@@ -8,10 +8,10 @@
         <div>
         <form id='itemmodify' class="pure-form pure-form-aligned" action="/misc/itemmod" method="get">
             <fieldset>
-                <legend id="itemmodify-legend">Modify Item</legend>
+                <legend id="itemmodify-legend">Item Attributes</legend>
                 <div class="pure-control-group">
-                    <label for="itemmodify-sku">SKU</label>
-                    <input type="text" id="itemmodify-sku" name="sku" placeholder="SKU/Barcode" required="" value="{{ sku }}" autofocus/>
+                    <label for="itemmodify-sku">SKU*</label>
+                    <input type="text" id="itemmodify-sku" name="sku" required placeholder="SKU/Barcode" required="" value="{{ sku }}" autofocus/>
                     <span class="pure-form-message-inline desktop-only">Lookup based on SKU</span>
                 </div>
                 <div class="pure-control-group">
