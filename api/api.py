@@ -693,17 +693,73 @@ def page_itemmod():
     """
 
     sku = escape(request.args.get('sku',0))
-    rows = {}
+    data = {}
     if sku:
         query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
         g.cur.execute(query)
-
         rows = g.cur.fetchone()
         logging.info(rows)
-        if not bool(rows):
-            rows = {'sku':0, 'productdescription': '', 'badbarcode': False}
-    return render_template('itemmodify.html', **rows)
 
+        query = f'SELECT upc FROM skubarcodelookup WHERE sku={sku}'
+        g.cur.execute(query)
+        gtin12 = g.cur.fetchone()
+        logging.info(gtin12)
+
+        query = f'SELECT upc FROM orderlog WHERE sku={sku}'
+        g.cur.execute(query)
+        gtin14 = g.cur.fetchone()
+        logging.info(gtin14)
+        
+        data = {'sku':0, 'productdescription': '', 'gtin14': '0', 'gtin12': '0', 'badbarcode': False}
+        if rows:
+            data.update(rows)
+            if gtin14:
+                data.update({'gtin14': gtin14.get('upc',0)})
+                if not gtin12 and Barcode.Interleaved2of5(gtin14.get('upc',0)):
+                    data.update({'gtin12': Barcode.CalculateUPC(gtin14.get('upc',0))})
+            if gtin12:
+                data.update({'gtin12': gtin12.get('upc',0)})
+        logging.info(data)
+    return render_template('itemmodify.html', **data)
+
+@app.route('/misc/itemattr', methods=['POST'])
+@auto.doc(expected_type='application/json',args={
+            'sku': 'Barcode printed on label',
+            'badbarcode': '0/1, default 0'
+            })
+def __misc_itemattr():
+    """
+    Sets item attributes of a SKU.
+
+    This will return the barcode state of a SKU in a GET message, and will set the barcode state of a SKU in a POST message.
+
+    :param int sku: The SKU to modify
+    :param int badbarcode: 0/1. Set to 1 to indicate true.
+    :param int gtin12: Barcode of item.
+    
+    """
+
+    sku = int(escape(request.form.get('sku',0)))
+    badbarcode = int(escape(request.form.get('badbarcode',0)))
+    gtin12 = int(escape(request.form.get('gtin12',0)))
+    if sku == 0:
+        return {'success': False, 'reason': 'invalid sku.'}
+        logging.warn(f'Invalid SKU.')
+    logging.info(f'{sku}, badbarcode={bool(badbarcode)}, gtin12={gtin12}')
+    
+    query = f'INSERT INTO iteminfolist (sku, badbarcode) VALUES ({sku},{bool(badbarcode)}) ON DUPLICATE KEY UPDATE badbarcode={bool(badbarcode)}'
+    logging.info(query)
+    g.cur.execute(query)
+
+    query = f'INSERT INTO skubarcodelookup (upc, sku) VALUES ( {gtin12}, {sku} ) ON DUPLICATE KEY UPDATE sku={sku}'
+    logging.info(query)
+    g.cur.execute(query)
+
+    query = f'SELECT sku, badbarcode FROM iteminfolist WHERE sku={sku}'
+    g.cur.execute(query)
+    result = g.cur.fetchone()
+
+    return result
 
 @app.route('/misc/badbarcode', methods=['GET','POST'])
 @auto.doc(expected_type='application/json',args={
@@ -711,7 +767,9 @@ def page_itemmod():
             'badbarcode': '0/1, default 0'
             })
 def __misc_badbarcode():
-    """Gets or Sets the barcode-okayness of a SKU.
+    """DEPRECATED: setting badbarcode boolean. Use /misc/itemattr instead.
+    
+    Gets or Sets the barcode-okayness of a SKU.
 
     This will return the barcode state of a SKU in a GET message, and will set the barcode state of a SKU in a POST message.
 

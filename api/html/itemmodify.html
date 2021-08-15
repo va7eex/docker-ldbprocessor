@@ -15,18 +15,28 @@
                     <span class="pure-form-message-inline desktop-only">Lookup based on SKU</span>
                 </div>
                 <div class="pure-control-group">
-                    <label for="itemmodify-description">Description</label>
+                    <label for="itemmodify-description">Product Description</label>
                     <input type="text" id="itemmodify-description" readonly value="{{ productdescription }}"/>
                     <span class="pure-form-message-inline desktop-only">Product Description</span>
                 </div>
                 <div class="pure-control-group">
-                    <label for="itemmodify-badbarcode" class="pure-checkbox">Damaged/missing barcode</label>
+                    <label for="itemmodify-gtin14">GTIN-14 (Box) Barcode</label>
+                    <input type="text" id="itemmodify-gtin14" readonly value="{{ gtin14 }}"/>
+                    <span class="pure-form-message-inline desktop-only">GTIN-14 as displayed on boxed quantities.</span>
+                </div>
+                <div class="pure-control-group">
+                    <label for="itemmodify-gtin12">GTIN-12 (Item) Barcode</label>
+                    <input type="text" id="itemmodify-gtin12" name='gtin12' value="{{ gtin12 }}"/>
+                    <span class="pure-form-message-inline desktop-only">Barcode for individual item.</span>
+                </div>
+                <div class="pure-control-group">
+                    <label for="itemmodify-badbarcode" class="pure-checkbox">Damaged/Missing Barcode</label>
                     <input type="checkbox" id="itemmodify-badbarcode" name='badbarcode' value='1' {% if badbarcode %} checked='' {% endif %}/>
                     <span class="pure-form-message-inline desktop-only">This will automatically flag an incoming SKU for label printing.</span>
                 </div>
                 <div class='pure-controls'>
                     <button id='itemmodify-retrieve' type="submit" class="pure-button pure-button-primary" formmethod='get'>Retrieve</button>
-                    <button id='itemmodify-submit' type="submit" class="pure-button pure-button-primary" formmethod='post' formaction='/misc/badbarcode'>Submit</button>
+                    <button id='itemmodify-submit' type="submit" class="pure-button pure-button-primary" formmethod='post' formaction='/misc/itemattr'>Submit</button>
                 </div>
             </fieldset>
         </form>
