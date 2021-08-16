@@ -19,21 +19,42 @@ class LineItem:
         pass
 
     def __len__(self):
+        """Returns length of details array."""
         return len(self.details)
 
     def getkeys(self):
+        """Returns all values of the dictionary as a list.
+
+        :rtype: list
+        :return: A list of keys.
+        """
         return list(self.details.keys())
 
     def getkeysconcat(self):
+        """Concat all keys into a comma seperated single string.
+
+        :rtype: string
+        :return: string of comma seperated keys.
+        """
         retstr = ''
         for k in self.getkeys():
             retstr += f'{k},'
         return retstr[:-1]
 
     def getvalues(self):
+        """Returns all values of the dictionary as a list.
+
+        :rtype: list
+        :return: A list of values.
+        """
         return list(self.details.values())
 
     def getvaluesconcat(self):
+        """Concat all values into a comma seperated single string.
+
+        :rtype: string
+        :return: string of comma seperated values.
+        """
         retstr = ''
         for v in self.getvalues():
             if type(v) == str:
@@ -43,6 +64,12 @@ class LineItem:
         return retstr[:-1]
 
     def getall(self, urlsafe=False):
+        """Get all key-values of the class.
+
+        :param bool urlsafe: If true this will stringify all data.
+        :rtype: dict
+        :return: dict of key-values.
+        """
         if urlsafe:
             urlsafedata = {}
             for key, value in self.details.items():
@@ -68,6 +95,16 @@ class LineItem:
 class LineItemAR(LineItem):
 
     def __init__(self, *vars, **kwargs):
+        """
+        LineItem class for AR invoice. 
+
+        Data can be input as an array OR a dict.
+
+        :param array *vars: A list of values pre-sorted. This should be used when taking text file input.
+        :param dict **kwargs: A dict of key-values.
+
+        :raise Exception: Exception occurs if expected data is too short or too long.
+        """
 
 #        self.schema = Schema({'sku': int, 'productdescription': str, 'productcategory': str,
 #                              'size': str, 'qty': int, 'uom': str, 'priceperuom': float,
@@ -132,7 +169,7 @@ class LineItemAR(LineItem):
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
             if type(v) == str:
-                v = re.sub(r'([^ \sa-zA-Z0-9.]| {2,})','',v)
+                v = re.sub('([^ \sa-zA-Z0-9.]| {2,})','',v)
 #            print(f'{k}: {v}')
             if type(v) == int or type(v) == float:
                 v = abs(v)
@@ -142,6 +179,17 @@ class LineItemAR(LineItem):
 class LineItemOS(LineItem):
 
     def __init__(self, *vars, **kwargs):
+        """
+        LineItem class for Order Submission. 
+
+        Data can be input as an array OR a dict.
+
+        :param array *vars: A list of values pre-sorted. This should be used when taking text file input.
+        :param dict **kwargs: A dict of key-values.
+
+        :raise Exception: Exception occurs if expected data is too short or too long.
+        """
+
 
 #        self.schema = Schema({'sku': int, 'upc': int, 'productdescription': str,
  #                             'sellingunitsize': str, 'uom': str, 'qty': int})
@@ -187,7 +235,7 @@ class LineItemOS(LineItem):
         #we remove 'illegal' characters in the main script, but its always handy to do it again
         for k,v in self.details.items():
             if type(v) == str:
-                v = re.sub(r'([^ \sa-zA-Z0-9.]| {2,})','',v)
+                v = re.sub('([^ \sa-zA-Z0-9.]| {2,})','',v)
 #            print(f'{k}: {v}')
             if type(v) == int or type(v) == float:
                 v = abs(v)
